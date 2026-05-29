@@ -42,6 +42,10 @@ header .subtitle{color:var(--muted);font-size:.8rem}
 .ocr-progress{height:4px;background:var(--border);border-radius:2px;overflow:hidden;margin-bottom:6px}
 .ocr-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));width:0;transition:width .3s;border-radius:2px}
 .ocr-status{font-size:.78rem;color:var(--muted)}
+.ocr-found{display:flex;flex-wrap:wrap;gap:4px;margin-top:8px}
+.ocr-chip{padding:2px 8px;border-radius:10px;font-size:.7rem;font-weight:700}
+.ocr-chip.hit{background:rgba(52,211,153,.15);color:var(--green)}
+.ocr-chip.miss{background:rgba(248,113,113,.12);color:var(--red)}
 
 /* ── Rank display ── */
 .rank-hero{text-align:center;padding:24px 16px;background:linear-gradient(145deg,#141720,#1a1e2e);border-radius:14px;border:1px solid var(--border);margin-bottom:12px;position:relative;overflow:hidden}
@@ -190,6 +194,7 @@ header .subtitle{color:var(--muted);font-size:.8rem}
       <div class="ocr-bar" id="ocrBar">
         <div class="ocr-progress"><div class="ocr-fill" id="ocrFill"></div></div>
         <div class="ocr-status" id="ocrStatus">Scanning…</div>
+        <div class="ocr-found" id="ocrFound"></div>
       </div>
       <div class="btn-row" style="margin-top:8px">
         <button class="btn primary" onclick="runOcr()">🔍 Scan Screenshot</button>
@@ -203,8 +208,11 @@ header .subtitle{color:var(--muted);font-size:.8rem}
 
   <!-- Manual Inputs -->
   <div class="card">
-    <div class="card-title">Your Metrics</div>
-    <div class="section-note">
+    <div class="card-title" style="display:flex;justify-content:space-between;align-items:center">
+      Your Metrics
+      <button class="btn" id="modeToggle" onclick="toggleInputMode()" style="font-size:.7rem;padding:4px 10px">Switch to Points Mode</button>
+    </div>
+    <div class="section-note" id="modeNote">
       Sales categories → enter % to goal. &nbsp;Protection / Rate Plan / Next Up → enter your actual attach %.
     </div>
     <div id="metricsForm"></div>
@@ -321,12 +329,16 @@ const SALES_CFG = [
   {id:'htp',        label:'HTP',                      unit:'count'},
 ];
 
-function p2p(id, pct) {
-  if (pct === null || isNaN(pct)) return 0;
+function p2p(id, val) {
+  if (val === null || isNaN(val)) return 0;
+  if (inputMode==='pts') {
+    const cfg=METRIC_CFG.find(m=>m.id===id);
+    return cfg ? Math.min(Math.max(0,val), cfg.max) : 0;
+  }
   const tbl = ATTACH_TBL[id];
-  if (tbl) { for (const [t,p] of tbl) if (pct >= t) return p; return 0; }
+  if (tbl) { for (const [t,p] of tbl) if (val >= t) return p; return 0; }
   const cfg = METRIC_CFG.find(m=>m.id===id); if (!cfg) return 0;
-  for (const t of SALES_THR) if (pct >= t) return Math.round(cfg.max*SALES_MUL[t]*100)/100;
+  for (const t of SALES_THR) if (val >= t) return Math.round(cfg.max*SALES_MUL[t]*100)/100;
   return 0;
 }
 
@@ -339,8 +351,7 @@ function computeAll(metrics) {
     total+=pts[m.id];
   }
   total=Math.round(total*100)/100;
-  const rank=Math.round(total/10*100)/100;
-  return {pts,total,rank};
+  return {pts,total,rank:Math.floor(total)/10};
 }
 
 function pathToRank(metrics,targetRank) {
@@ -349,11 +360,11 @@ function pathToRank(metrics,targetRank) {
   const needed=Math.max(0,Math.round((targetTotal-curTotal)*100)/100);
   const cands=[];
   for (const m of METRIC_CFG) {
-    const curPct=metrics[m.id]||0;
-    const curPt=p2p(m.id,curPct);
-    const maxPt=p2p(m.id,125);
+    const curVal=metrics[m.id]||0;
+    const curPt=p2p(m.id,curVal);
+    const maxPt=inputMode==='pts'?m.max:p2p(m.id,125);
     const gain=Math.round((maxPt-curPt)*100)/100;
-    if(gain>0) cands.push({id:m.id,label:m.label,curPct,curPt,maxPt,gain});
+    if(gain>0) cands.push({id:m.id,label:m.label,curPct:curVal,curPt,maxPt,gain});
   }
   cands.sort((a,b)=>b.gain-a.gain);
   const actions=[]; let proj=curTotal;
@@ -362,7 +373,7 @@ function pathToRank(metrics,targetRank) {
     actions.push({...c});
     proj=Math.round((proj+c.gain)*100)/100;
   }
-  return {curRk,curTotal,targetRank,targetTotal,needed,actions,proj,projRank:Math.round(proj/10*100)/100};
+  return {curRk,curTotal,targetRank,targetTotal,needed,actions,proj,projRank:Math.floor(proj)/10};
 }
 
 function calcPay(sales,tierKey) {
@@ -384,9 +395,10 @@ function calcPay(sales,tierKey) {
 //  STATE
 // ═══════════════════════════════════════════════════════
 
-let state={}; // metric id → percent value
+let state={}; // metric id → value (% or pts depending on inputMode)
 let targetRank=9.0;
 let uploadedImg=null;
+let inputMode='pct'; // 'pct' = % to goal / attach %; 'pts' = points earned directly
 
 // ═══════════════════════════════════════════════════════
 //  UI BUILDERS
@@ -395,19 +407,36 @@ let uploadedImg=null;
 function buildMetricsForm() {
   const el=document.getElementById('metricsForm');
   el.innerHTML='';
+  const isPts=inputMode==='pts';
   for (const m of METRIC_CFG) {
     const div=document.createElement('div');
     div.className='field';
+    const hint=isPts?`pts of ${m.max}`:m.attach?'attach %':'% to goal';
+    const ph=isPts?`0–${m.max}`:m.attach?'0–100':'0–300';
+    const sfx=isPts?'pts':'%';
     div.innerHTML=`
-      <label>${m.label} <span class="field-hint">${m.hint} · max ${m.max} pts</span></label>
+      <label>${m.label} <span class="field-hint">${hint} · max ${m.max} pts</span></label>
       <div class="input-wrap">
-        <input type="number" id="inp_${m.id}" min="0" max="300" step="0.1"
-               placeholder="${m.attach?'0–100':'0–300'}" oninput="onMetricInput('${m.id}',this.value)"/>
-        <span class="suffix">%</span>
+        <input type="number" id="inp_${m.id}" min="0" max="${isPts?m.max:300}" step="${isPts?0.5:0.1}"
+               placeholder="${ph}" oninput="onMetricInput('${m.id}',this.value)"/>
+        <span class="suffix">${sfx}</span>
         <span class="pts-badge" id="pb_${m.id}" style="color:var(--muted)">0 / ${m.max}</span>
       </div>`;
     el.appendChild(div);
   }
+}
+
+function toggleInputMode() {
+  inputMode=inputMode==='pct'?'pts':'pct';
+  state={};
+  buildMetricsForm();
+  updateUI();
+  const btn=document.getElementById('modeToggle');
+  if(btn) btn.textContent=inputMode==='pts'?'Switch to % Mode':'Switch to Points Mode';
+  const note=document.getElementById('modeNote');
+  if(note) note.textContent=inputMode==='pts'
+    ?”Points Earned mode: enter the number from “X of Y PTS” on your portal circles.”
+    :"Sales categories → enter % to goal.  Protection / Rate Plan / Next Up → enter your actual attach %.";
 }
 
 function buildWhatIfForm() {
@@ -516,7 +545,8 @@ function updateUI() {
     const pct=state[m.id]||0;
     const p=pts[m.id]||0;
     const barPct=Math.min(100,(p/m.max)*100);
-    const barCol=pct>=100?'var(--green)':pct>=70?'var(--accent)':pct>=50?'var(--yellow)':'var(--red)';
+    const fullPts=inputMode==='pts'?m.max:p2p(m.id,125);
+    const barCol=p>=fullPts?'var(--green)':p>=fullPts*0.7?'var(--accent)':p>=fullPts*0.5?'var(--yellow)':'var(--red)';
     const bar=document.getElementById('bar_'+m.id);
     if(bar){bar.style.width=barPct+'%';bar.style.background=barCol;}
     const cpv=document.getElementById('cpv_'+m.id);
@@ -552,7 +582,7 @@ function refreshPath() {
     html+=`<div class="action-card">
       <div class="ac-left">
         <div class="ac-metric">${step}. ${a.label}</div>
-        <div class="ac-sub">Currently ${a.curPct.toFixed(1)}% → max out (${a.maxPt} pts)</div>
+        <div class="ac-sub">Currently ${a.curPct.toFixed(1)}${inputMode==='pts'?'':'%'} → max out (${a.maxPt} pts)</div>
       </div>
       <span class="ac-badge">+${a.gain} pts</span>
     </div>`;
@@ -738,36 +768,134 @@ function matchMetric(line) {
   return null;
 }
 
+// Convert "X of Y PTS" earned-points back to approximate % for pct-mode fields.
+function ptsEarnedToApproxPct(id, earned) {
+  const tbl=ATTACH_TBL[id];
+  if(tbl) {
+    for(const [thresh,pts] of tbl) if(Math.abs(earned-pts)<0.01) return thresh+1;
+    return earned>0?61:20;
+  }
+  const cfg=METRIC_CFG.find(m=>m.id===id);
+  if(!cfg) return 0;
+  for(let i=0;i<SALES_THR.length;i++){
+    const t=SALES_THR[i];
+    const p=Math.round(cfg.max*SALES_MUL[t]*100)/100;
+    if(Math.abs(earned-p)<0.01){
+      const next=SALES_THR[i-1]??t+10;
+      return Math.round((t+next)/2);
+    }
+  }
+  return 0;
+}
+
+function pctValid(v, isAttach) {
+  return isAttach ? (v>=25&&v<100) : (v>=15&&v<=350);
+}
+
+function extractPcts(str) {
+  return [...str.matchAll(/(\d{1,3}(?:\.\d+)?)\s*%/g)].map(m=>parseFloat(m[1]));
+}
+
 function parseOcrText(text) {
   const found={};
   const lines=text.split('\n').map(l=>l.trim()).filter(Boolean);
 
-  for (const line of lines) {
-    const metricId=matchMetric(line);
-    if(!metricId) continue;
-    // Extract all % numbers from the line
-    const nums=[...line.matchAll(/(\d{1,3}(?:\.\d+)?)\s*%/g)].map(m=>parseFloat(m[1]));
-    if(nums.length>0 && !(metricId in found)) {
-      // Take the first reasonable value: for attach metrics cap at 100, sales up to 300
-      const cfg=METRIC_CFG.find(m=>m.id===metricId);
-      const cap=cfg?.attach?100:300;
-      const val=nums.find(n=>n<=cap&&n>=0);
-      if(val!==undefined) found[metricId]=val;
+  // ── PASS 1: "X of Y PTS" proximity (most reliable for portal circles) ──────
+  const PTS_RE=/(\d+(?:\.\d+)?)\s+of\s+(\d+(?:\.\d+)?)\s+(?:pts?|points?)/gi;
+  for(const{keys,id}of OCR_KEYWORDS){
+    if(id in found) continue;
+    const cfg=METRIC_CFG.find(m=>m.id===id);
+    if(!cfg) continue;
+    for(let i=0;i<lines.length;i++){
+      if(!keys.some(k=>lines[i].toLowerCase().includes(k))) continue;
+      const ctx=lines.slice(Math.max(0,i-3),i+4).join(' ');
+      let best=null;
+      const rx=new RegExp(PTS_RE.source,'gi');
+      let m2;
+      while((m2=rx.exec(ctx))!==null){
+        const earned=parseFloat(m2[1]);
+        const maxV=parseFloat(m2[2]);
+        if(maxV===cfg.max){best=earned;break;}
+        if(best===null)best=earned;
+      }
+      if(best!==null){
+        found[id+'_pts']=best;
+        if(!(id in found))
+          found[id]=inputMode==='pts'?best:ptsEarnedToApproxPct(id,best);
+        break;
+      }
     }
   }
 
-  // Fallback: if we got < 3 metrics, try scanning for standalone numbers near keywords
-  // by looking at adjacent lines
-  for (let i=0;i<lines.length;i++) {
-    const metricId=matchMetric(lines[i]);
-    if(!metricId||metricId in found) continue;
-    // Check this line and ±2 lines for a plain percentage
-    const context=lines.slice(Math.max(0,i-1),i+3).join(' ');
-    const nums=[...context.matchAll(/(\d{1,3}(?:\.\d+)?)\s*%/g)].map(m=>parseFloat(m[1]));
-    const cfg=METRIC_CFG.find(m=>m.id===metricId);
-    const cap=cfg?.attach?100:300;
-    const val=nums.find(n=>n<=cap&&n>=0);
-    if(val!==undefined) found[metricId]=val;
+  // ── PASS 2: Grid positional (name row + preceding % row) ─────────────────
+  for(let i=0;i<lines.length;i++){
+    const lineLow=lines[i].toLowerCase();
+    const hits=[];
+    for(const{keys,id}of OCR_KEYWORDS){
+      for(const key of keys){
+        const idx=lineLow.indexOf(key);
+        if(idx!==-1){hits.push({id,pos:idx});break;}
+      }
+    }
+    if(hits.length<2) continue;
+    hits.sort((a,b)=>a.pos-b.pos);
+    for(let j=Math.max(0,i-3);j<i;j++){
+      const pcts=extractPcts(lines[j]);
+      if(pcts.length!==hits.length) continue;
+      let assigned=0;
+      for(let k=0;k<hits.length;k++){
+        const{id}=hits[k];
+        if(id in found) continue;
+        const val=pcts[k];
+        const isAttach=METRIC_CFG.find(m=>m.id===id)?.attach;
+        if(pctValid(val,isAttach)){found[id]=val;assigned++;}
+      }
+      if(assigned>0) break;
+    }
+  }
+
+  // ── PASS 3: Direct adjacency (1–2 surrounding lines) ─────────────────────
+  for(const{keys,id}of OCR_KEYWORDS){
+    if(id in found) continue;
+    const isAttach=METRIC_CFG.find(m=>m.id===id)?.attach;
+    for(let i=0;i<lines.length;i++){
+      if(!keys.some(k=>lines[i].toLowerCase().includes(k))) continue;
+      for(let j=Math.max(0,i-2);j<i;j++){
+        const pcts=extractPcts(lines[j]);
+        let c=null;
+        if(isAttach) c=pcts.find(v=>pctValid(v,true))??null;
+        else{const v=pcts.filter(v=>pctValid(v,false));if(v.length)c=Math.max(...v);}
+        if(c!==null){found[id]=c;break;}
+      }
+      if(id in found) break;
+      const same=extractPcts(lines[i]);
+      let c=null;
+      if(isAttach) c=same.find(v=>pctValid(v,true))??null;
+      else{const v=same.filter(v=>pctValid(v,false));if(v.length)c=Math.max(...v);}
+      if(c!==null){found[id]=c;break;}
+      if(i+1<lines.length){
+        const nxt=extractPcts(lines[i+1]);
+        let c2=null;
+        if(isAttach) c2=nxt.find(v=>pctValid(v,true))??null;
+        else{const v=nxt.filter(v=>pctValid(v,false));if(v.length)c2=Math.max(...v);}
+        if(c2!==null){found[id]=c2;break;}
+      }
+    }
+  }
+
+  // ── PASS 4: Narrow fallback (±2 lines only) ───────────────────────────────
+  for(const{keys,id}of OCR_KEYWORDS){
+    if(id in found) continue;
+    const isAttach=METRIC_CFG.find(m=>m.id===id)?.attach;
+    for(let i=0;i<lines.length;i++){
+      if(!keys.some(k=>lines[i].toLowerCase().includes(k))) continue;
+      const ctx=lines.slice(Math.max(0,i-2),i+3).join(' ');
+      const pcts=extractPcts(ctx);
+      let c=null;
+      if(isAttach) c=pcts.find(v=>pctValid(v,true))??null;
+      else{const v=pcts.filter(v=>pctValid(v,false));if(v.length)c=Math.max(...v);}
+      if(c!==null){found[id]=c;break;}
+    }
   }
 
   return found;
@@ -775,11 +903,32 @@ function parseOcrText(text) {
 
 function applyOcrResult(parsed) {
   let count=0;
-  for (const [id,val] of Object.entries(parsed)) {
-    const el=document.getElementById('inp_'+id);
-    if(el){ el.value=val; state[id]=val; count++; }
+  for(const m of METRIC_CFG){
+    // In pts mode prefer _pts variant if available
+    const val=inputMode==='pts'&&(m.id+'_pts')in parsed
+      ?parsed[m.id+'_pts']
+      :parsed[m.id];
+    if(val===undefined) continue;
+    const el=document.getElementById('inp_'+m.id);
+    if(el){el.value=val;state[m.id]=val;count++;}
   }
   return count;
+}
+
+function showOcrChips(parsed) {
+  const chips=document.getElementById('ocrFound');
+  if(!chips) return;
+  chips.innerHTML='';
+  for(const m of METRIC_CFG){
+    const hit=m.id in parsed||(m.id+'_pts')in parsed;
+    const chip=document.createElement('span');
+    chip.className='ocr-chip '+(hit?'hit':'miss');
+    const dispVal=inputMode==='pts'&&(m.id+'_pts')in parsed
+      ?`${parsed[m.id+'_pts']} pts`
+      :hit?`${parsed[m.id]}%`:null;
+    chip.textContent=hit?`${m.label} ${dispVal}`:`${m.label} ?`;
+    chips.appendChild(chip);
+  }
 }
 
 let tesseractLoaded=false;
@@ -811,6 +960,8 @@ async function runOcr() {
           }
         }
       });
+      // PSM 11 = sparse text, best for dashboard/circle-grid screenshots
+      await worker.setParameters({tessedit_pageseg_mode:'11'});
 
       const {data:{text}}=await worker.recognize(uploadedImg);
       await worker.terminate();
@@ -820,13 +971,17 @@ async function runOcr() {
 
       const parsed=parseOcrText(text);
       const count=applyOcrResult(parsed);
+      showOcrChips(parsed);
 
       ocrFill.style.width='100%';
-      if(count>0){
-        ocrStatus.textContent=`✅ Found ${count} metric${count!==1?'s':''} — verify and adjust as needed.`;
+      if(count===8){
+        ocrStatus.textContent='All 8 metrics found — verify values below then hit Calculate.';
+        updateUI();
+      } else if(count>0){
+        ocrStatus.textContent=`Found ${count}/8 metrics — verify below. Tip: try "Switch to Points Mode" for better scanning.`;
         updateUI();
       } else {
-        ocrStatus.textContent='⚠️ Couldn\'t read the numbers — please type them in manually.';
+        ocrStatus.textContent='⚠️ Could not read numbers — try "Switch to Points Mode" then scan again, or enter manually.';
       }
     } catch(e) {
       ocrStatus.textContent='OCR failed — enter numbers manually. ('+e.message+')';
