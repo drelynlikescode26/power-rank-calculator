@@ -751,14 +751,14 @@ function clearImage() {
 
 // OCR keyword maps to field ids
 const OCR_KEYWORDS=[
-  {keys:['next up','nextup','next-up'],       id:'next_up'},
-  {keys:['rate plan','rateplan','rate %'],    id:'rate_plan'},
-  {keys:['protect'],                           id:'protection'},
-  {keys:['accessori','access'],               id:'accessories'},
-  {keys:['fiber','fibre','fib'],              id:'fiber'},
-  {keys:['aia','air'],                        id:'aia'},
-  {keys:['ppvga','pvga','premium voice','new voice'],id:'ppvga'},
-  {keys:['opps','opp'],                       id:'opps'},
+  {keys:['next up','nextup','next-up','next_up'],     id:'next_up'},
+  {keys:['rate plan','rate plan %','rateplan'],       id:'rate_plan'},
+  {keys:['protection','protect'],                     id:'protection'},
+  {keys:['accessories','accessori'],                  id:'accessories'},
+  {keys:['fiber','fibre'],                            id:'fiber'},
+  {keys:['aia'],                                      id:'aia'},
+  {keys:['ppvga','pvga','premium voice'],             id:'ppvga'},
+  {keys:['opps','opp ','opp\n'],                     id:'opps'},
 ];
 
 function matchMetric(line) {
@@ -941,6 +941,23 @@ function loadTesseract(cb) {
   document.head.appendChild(s);
 }
 
+// Crop an image dataURL to the top `fraction` of the image height.
+// The metrics circles are always in the top portion of portal screenshots.
+function cropImageTop(dataUrl, fraction) {
+  return new Promise(resolve => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      const cropH = Math.floor(img.height * fraction);
+      canvas.width = img.width;
+      canvas.height = cropH;
+      canvas.getContext('2d').drawImage(img, 0, 0, img.width, cropH, 0, 0, img.width, cropH);
+      resolve(canvas.toDataURL('image/jpeg', 0.92));
+    };
+    img.src = dataUrl;
+  });
+}
+
 async function runOcr() {
   if(!uploadedImg){alert('Upload a screenshot first.');return;}
   ocrBar.style.display='block';
@@ -955,36 +972,49 @@ async function runOcr() {
       const worker=await Tesseract.createWorker('eng',1,{
         logger:m=>{
           if(m.status==='recognizing text'){
-            ocrFill.style.width=Math.round(15+m.progress*75)+'%';
-            ocrStatus.textContent='Reading text… '+Math.round(m.progress*100)+'%';
+            ocrFill.style.width=Math.round(15+m.progress*65)+'%';
+            ocrStatus.textContent='Reading… '+Math.round(m.progress*100)+'%';
           }
         }
       });
-      // PSM 11 = sparse text, best for dashboard/circle-grid screenshots
-      await worker.setParameters({tessedit_pageseg_mode:'11'});
 
-      const {data:{text}}=await worker.recognize(uploadedImg);
+      // Pass 1: crop to top 50% — focuses on metric circles, cuts out table noise
+      const cropped = await cropImageTop(uploadedImg, 0.50);
+      await worker.setParameters({tessedit_pageseg_mode:'6'}); // uniform block = good for 4×2 grid
+      const {data:{text:text1}} = await worker.recognize(cropped);
+
+      ocrFill.style.width='82%';
+      ocrStatus.textContent='Pass 2 — full image…';
+
+      // Pass 2: full image with sparse-text mode as fallback for anything missed
+      await worker.setParameters({tessedit_pageseg_mode:'11'});
+      const {data:{text:text2}} = await worker.recognize(uploadedImg);
+
       await worker.terminate();
 
       ocrFill.style.width='95%';
       ocrStatus.textContent='Parsing metrics…';
 
-      const parsed=parseOcrText(text);
-      const count=applyOcrResult(parsed);
-      showOcrChips(parsed);
+      // Merge: pass 1 (cropped, higher quality) takes priority over pass 2
+      const parsed1 = parseOcrText(text1);
+      const parsed2 = parseOcrText(text2);
+      const merged = {...parsed2, ...parsed1}; // pass1 wins on conflicts
+
+      const count = applyOcrResult(merged);
+      showOcrChips(merged);
 
       ocrFill.style.width='100%';
       if(count===8){
-        ocrStatus.textContent='All 8 metrics found — verify values below then hit Calculate.';
+        ocrStatus.textContent='All 8 metrics found — verify values then hit Calculate.';
         updateUI();
       } else if(count>0){
-        ocrStatus.textContent=`Found ${count}/8 metrics — verify below. Tip: try "Switch to Points Mode" for better scanning.`;
+        ocrStatus.textContent=`Found ${count}/8 — verify below. For the missing ones, switch to Points Mode or type manually.`;
         updateUI();
       } else {
-        ocrStatus.textContent='⚠️ Could not read numbers — try "Switch to Points Mode" then scan again, or enter manually.';
+        ocrStatus.textContent='⚠️ Could not read numbers — switch to Points Mode or enter manually.';
       }
     } catch(e) {
-      ocrStatus.textContent='OCR failed — enter numbers manually. ('+e.message+')';
+      ocrStatus.textContent='OCR error — enter manually. ('+e.message+')';
     }
   });
 }
