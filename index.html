@@ -13,125 +13,156 @@
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;font-size:14px;line-height:1.5;min-height:100vh}
 
+/* ── Layout ── */
 .app{max-width:1300px;margin:0 auto;padding:16px}
-header{display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap}
+header{display:flex;align-items:center;gap:12px;margin-bottom:20px}
 header h1{font-size:1.5rem;font-weight:800;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
 header .subtitle{color:var(--muted);font-size:.8rem}
 .main-grid{display:grid;grid-template-columns:380px 1fr;gap:16px}
 @media(max-width:860px){.main-grid{grid-template-columns:1fr}}
 
-.card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:18px;margin-bottom:12px}
-.card:last-child{margin-bottom:0}
-.card-title{font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:12px}
+/* ── Cards ── */
+.card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:18px}
+.card-title{font-size:.82rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:14px}
 
-/* Upload */
-.upload-zone{border:2px dashed var(--border);border-radius:12px;padding:24px 16px;text-align:center;cursor:pointer;transition:border-color .2s,background .2s;position:relative}
+/* ── Upload zone ── */
+.upload-zone{
+  border:2px dashed var(--border);border-radius:12px;padding:28px 16px;
+  text-align:center;cursor:pointer;transition:border-color .2s,background .2s;
+  position:relative;
+}
 .upload-zone:hover,.upload-zone.drag{border-color:var(--accent);background:rgba(124,111,247,.06)}
 .upload-zone input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
-.upload-icon{font-size:2rem;margin-bottom:6px;opacity:.5}
-.upload-text{color:var(--muted);font-size:.82rem}
+.upload-icon{font-size:2rem;margin-bottom:8px;opacity:.5}
+.upload-text{color:var(--muted);font-size:.85rem}
 .upload-text strong{color:var(--accent)}
 #previewWrap{margin-top:12px;display:none}
-#previewImg{width:100%;border-radius:8px;border:1px solid var(--border);max-height:260px;object-fit:contain}
+#previewImg{width:100%;border-radius:8px;border:1px solid var(--border);max-height:280px;object-fit:contain}
 .ocr-bar{margin-top:10px;display:none}
-.ocr-progress{height:4px;background:var(--border);border-radius:2px;overflow:hidden;margin-bottom:5px}
+.ocr-progress{height:4px;background:var(--border);border-radius:2px;overflow:hidden;margin-bottom:6px}
 .ocr-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));width:0;transition:width .3s;border-radius:2px}
-.ocr-status{font-size:.76rem;color:var(--muted)}
+.ocr-status{font-size:.78rem;color:var(--muted)}
 .ocr-found{display:flex;flex-wrap:wrap;gap:4px;margin-top:8px}
 .ocr-chip{padding:2px 8px;border-radius:10px;font-size:.7rem;font-weight:700}
 .ocr-chip.hit{background:rgba(52,211,153,.15);color:var(--green)}
 .ocr-chip.miss{background:rgba(248,113,113,.12);color:var(--red)}
 
-/* Rank hero */
-.rank-hero{text-align:center;padding:22px 16px;background:linear-gradient(145deg,#141720,#1a1e2e);border-radius:14px;border:1px solid var(--border);margin-bottom:12px;position:relative;overflow:hidden}
+/* ── Rank display ── */
+.rank-hero{text-align:center;padding:24px 16px;background:linear-gradient(145deg,#141720,#1a1e2e);border-radius:14px;border:1px solid var(--border);margin-bottom:12px;position:relative;overflow:hidden}
 .rank-hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 50% -20%,rgba(124,111,247,.15),transparent 60%);pointer-events:none}
-.rank-number{font-size:5rem;font-weight:900;line-height:1;letter-spacing:-3px}
-.rank-max{font-size:1.8rem;opacity:.35;font-weight:700}
-.rank-label{color:var(--muted);font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;margin-top:2px}
-.rank-pts{margin-top:5px;font-size:.9rem;color:var(--muted)}
+.rank-number{font-size:5.5rem;font-weight:900;line-height:1;letter-spacing:-4px}
+.rank-max{font-size:2rem;opacity:.4;font-weight:700}
+.rank-label{color:var(--muted);font-size:.78rem;letter-spacing:.1em;text-transform:uppercase;margin-top:2px}
+.rank-pts{margin-top:6px;font-size:.95rem;color:var(--muted)}
 .rank-pts strong{color:var(--text)}
-.rank-badge{display:inline-flex;align-items:center;gap:5px;padding:4px 14px;border-radius:20px;font-size:.78rem;font-weight:700;margin-top:8px}
-.badge-great{background:rgba(52,211,153,.15);color:var(--green)}
-.badge-good{background:rgba(0,212,170,.15);color:var(--accent2)}
-.badge-ok{background:rgba(251,191,36,.15);color:var(--yellow)}
-.badge-danger{background:rgba(248,113,113,.15);color:var(--red)}
+.rank-badge{display:inline-flex;align-items:center;gap:6px;padding:5px 14px;border-radius:20px;font-size:.8rem;font-weight:700;margin-top:10px}
+.badge-great  {background:rgba(52,211,153,.15);color:var(--green)}
+.badge-good   {background:rgba(0,212,170,.15); color:var(--accent2)}
+.badge-ok     {background:rgba(251,191,36,.15); color:var(--yellow)}
+.badge-danger {background:rgba(248,113,113,.15);color:var(--red)}
 
-/* Category table */
+/* ── Category rows ── */
 .cat-table{width:100%;border-collapse:collapse}
-.cat-table td{padding:6px 4px;vertical-align:middle}
+.cat-table td{padding:7px 4px;vertical-align:middle}
 .cat-table tr{border-bottom:1px solid var(--border)}
 .cat-table tr:last-child{border-bottom:none}
-.cat-name{font-size:.8rem;color:var(--muted);white-space:nowrap;width:96px}
-.cat-bar-wrap{position:relative;height:6px;background:var(--border);border-radius:3px;overflow:hidden;min-width:60px}
+.cat-name{font-size:.82rem;color:var(--muted);white-space:nowrap;width:100px}
+.cat-bar-wrap{position:relative;height:6px;background:var(--border);border-radius:3px;overflow:hidden;min-width:80px}
 .cat-bar{height:100%;border-radius:3px;transition:width .4s ease,background .4s}
-.cat-pts-val{text-align:right;font-weight:700;font-size:.82rem;width:46px;white-space:nowrap}
-.cat-pts-max{text-align:right;color:var(--muted);font-size:.74rem;width:36px;white-space:nowrap}
+.cat-pts-val{text-align:right;font-weight:700;font-size:.85rem;width:52px;white-space:nowrap}
+.cat-pts-max{text-align:right;color:var(--muted);font-size:.78rem;width:40px;white-space:nowrap}
 
-/* Fields */
+/* ── Inputs ── */
 .field{margin-bottom:10px}
-.field label{display:flex;justify-content:space-between;font-size:.76rem;color:var(--muted);margin-bottom:3px}
-.field label .hint{color:#3e4460;font-size:.7rem}
+.field label{display:block;font-size:.78rem;color:var(--muted);margin-bottom:3px}
+.field-hint{font-size:.7rem;color:#4a5068;float:right}
 .input-wrap{position:relative;display:flex;align-items:center}
-.input-wrap input{flex:1;background:#111420;border:1px solid var(--border);color:var(--text);border-radius:8px;padding:8px 36px 8px 12px;font-size:.88rem;outline:none;width:100%}
+.input-wrap input{
+  flex:1;background:#111420;border:1px solid var(--border);
+  color:var(--text);border-radius:8px;padding:8px 36px 8px 12px;
+  font-size:.9rem;outline:none;width:100%;
+}
 .input-wrap input:focus{border-color:var(--accent);background:#161b2e}
-.input-wrap .suffix{position:absolute;right:10px;color:var(--muted);font-size:.74rem;pointer-events:none}
-.pts-badge{position:absolute;right:34px;background:var(--card2);border-radius:4px;padding:1px 5px;font-size:.68rem;font-weight:700;white-space:nowrap;pointer-events:none}
+.input-wrap .suffix{position:absolute;right:10px;color:var(--muted);font-size:.78rem;pointer-events:none}
+.input-wrap .pts-badge{
+  position:absolute;right:36px;background:var(--card2);
+  border-radius:4px;padding:1px 6px;font-size:.7rem;font-weight:700;
+  white-space:nowrap;pointer-events:none;
+}
 .input-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.input-grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
 
-/* Target rank buttons */
-.rank-btns{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:12px}
-.rank-btn{flex:1;min-width:48px;padding:7px 4px;border-radius:8px;border:1px solid var(--border);background:var(--card2);color:var(--muted);font-size:.8rem;font-weight:600;cursor:pointer;text-align:center;transition:all .15s}
+/* ── Target rank ── */
+.rank-btns{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
+.rank-btn{
+  flex:1;min-width:52px;padding:8px 4px;border-radius:8px;
+  border:1px solid var(--border);background:var(--card2);
+  color:var(--muted);font-size:.82rem;font-weight:600;cursor:pointer;
+  text-align:center;transition:all .15s;
+}
 .rank-btn:hover{border-color:var(--accent);color:var(--text)}
 .rank-btn.active{border-color:var(--accent);background:rgba(124,111,247,.2);color:var(--accent);font-weight:700}
 
-/* Action cards */
-.action-card{display:flex;justify-content:space-between;align-items:center;padding:10px 13px;background:var(--card2);border-radius:10px;margin-bottom:6px;border:1px solid var(--border)}
-.ac-metric{font-weight:700;font-size:.86rem}
-.ac-sub{font-size:.73rem;color:var(--muted);margin-top:2px}
-.ac-badge{background:rgba(0,212,170,.2);color:var(--accent2);border-radius:20px;padding:2px 11px;font-size:.76rem;font-weight:800;white-space:nowrap;margin-left:10px}
+/* ── Action cards ── */
+.action-card{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:10px 14px;background:var(--card2);border-radius:10px;
+  margin-bottom:6px;border:1px solid var(--border);
+}
+.action-card .ac-left{flex:1}
+.action-card .ac-metric{font-weight:700;font-size:.88rem}
+.action-card .ac-sub{font-size:.75rem;color:var(--muted);margin-top:2px}
+.action-card .ac-badge{
+  background:rgba(0,212,170,.2);color:var(--accent2);
+  border-radius:20px;padding:3px 12px;font-size:.78rem;font-weight:800;
+  white-space:nowrap;margin-left:12px;
+}
+.action-card .ac-badge.ac-neg{background:rgba(248,113,113,.15);color:var(--red)}
 
-/* Commission */
-.comm-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border);font-size:.83rem}
+/* ── Commission ── */
+.comm-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);font-size:.85rem}
 .comm-row:last-child{border-bottom:none}
 .comm-val{font-weight:700}
+.comm-big{font-size:1.4rem}
 .comm-green{color:var(--green)}
-.comm-gold{color:var(--gold)}
-.comm-uplift-box{background:rgba(52,211,153,.08);border:1px solid rgba(52,211,153,.25);border-radius:10px;padding:14px;margin-top:10px;text-align:center}
-.comm-big{font-size:1.5rem;font-weight:900}
-.tier-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:12px}
-@media(max-width:600px){.tier-grid{grid-template-columns:repeat(2,1fr)}}
-.tier-box{background:var(--card2);border-radius:10px;padding:10px 8px;text-align:center;border:1px solid var(--border)}
-.tier-box.active-tier{border-color:var(--accent);background:rgba(124,111,247,.1)}
-.tier-val{font-size:1.1rem;font-weight:800;line-height:1.2}
-.tier-lbl{font-size:.68rem;color:var(--muted);margin-top:3px}
-.tier-rank{font-size:.65rem;color:var(--accent);margin-top:2px;font-weight:700}
+.comm-muted{color:var(--muted)}
+.comm-uplift-box{background:rgba(52,211,153,.1);border:1px solid rgba(52,211,153,.3);border-radius:10px;padding:14px;margin-top:12px;text-align:center}
 
-/* Tabs */
-.tabs{display:flex;gap:4px;margin-bottom:12px;border-bottom:1px solid var(--border);padding-bottom:10px;overflow-x:auto}
-.tab{padding:6px 14px;border-radius:8px;cursor:pointer;font-size:.8rem;font-weight:600;border:1px solid transparent;color:var(--muted);background:transparent;transition:all .15s;white-space:nowrap}
+/* ── Tabs ── */
+.tabs{display:flex;gap:4px;margin-bottom:14px;border-bottom:1px solid var(--border);padding-bottom:12px}
+.tab{padding:7px 16px;border-radius:8px;cursor:pointer;font-size:.82rem;font-weight:600;
+  border:1px solid transparent;color:var(--muted);background:transparent;transition:all .15s}
 .tab:hover{color:var(--text);border-color:var(--border)}
 .tab.active{background:var(--card2);border-color:var(--accent);color:var(--accent)}
 .panel{display:none}
 .panel.active{display:block}
 
-/* Misc */
-.btn{padding:8px 16px;border-radius:8px;border:1px solid var(--border);background:var(--card2);color:var(--text);font-size:.8rem;font-weight:600;cursor:pointer;transition:all .15s}
+/* ── Misc ── */
+.btn{padding:8px 18px;border-radius:8px;border:1px solid var(--border);
+  background:var(--card2);color:var(--text);font-size:.82rem;font-weight:600;cursor:pointer;transition:all .15s}
 .btn:hover{border-color:var(--accent);background:rgba(124,111,247,.1)}
 .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
 .btn.primary:hover{background:#6a5ee8}
 .btn.danger{background:transparent;border-color:var(--warn);color:var(--warn)}
-.btn-row{display:flex;flex-wrap:wrap;gap:7px;margin-top:10px}
-.stat-row{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:12px}
-.stat-box{background:var(--card2);border-radius:10px;padding:11px 8px;text-align:center;border:1px solid var(--border)}
-.stat-val{font-size:1.3rem;font-weight:800;line-height:1}
-.stat-lbl{font-size:.68rem;color:var(--muted);margin-top:3px}
-.note{font-size:.74rem;color:var(--muted);background:rgba(124,111,247,.06);border:1px solid rgba(124,111,247,.14);border-radius:8px;padding:8px 11px;margin-bottom:10px;line-height:1.5}
-.empty-state{text-align:center;padding:24px;color:var(--muted);font-size:.83rem}
-.tag{display:inline-flex;align-items:center;padding:1px 7px;border-radius:10px;font-size:.7rem;font-weight:700}
+.btn.danger:hover{background:rgba(248,113,113,.1)}
+.btn-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.divider{border:none;border-top:1px solid var(--border);margin:14px 0}
+.empty-state{text-align:center;padding:28px;color:var(--muted);font-size:.85rem}
+.tag{display:inline-flex;align-items:center;padding:2px 8px;border-radius:10px;font-size:.72rem;font-weight:700}
 .tag-green{background:rgba(52,211,153,.15);color:var(--green)}
+.tag-yellow{background:rgba(251,191,36,.15);color:var(--yellow)}
 .tag-red{background:rgba(248,113,113,.15);color:var(--red)}
 .tag-blue{background:rgba(124,111,247,.15);color:var(--accent)}
-.section-divider{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:12px 0 6px;padding-bottom:4px;border-bottom:1px solid var(--border)}
+
+.stat-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:8px;margin-bottom:14px}
+.stat-box{background:var(--card2);border-radius:10px;padding:12px;text-align:center;border:1px solid var(--border)}
+.stat-val{font-size:1.4rem;font-weight:800;line-height:1}
+.stat-lbl{font-size:.7rem;color:var(--muted);margin-top:4px}
+
+.progress-ring-wrap{display:flex;justify-content:center;margin:8px 0}
+
+.section-note{font-size:.75rem;color:var(--muted);background:rgba(124,111,247,.07);border:1px solid rgba(124,111,247,.15);
+  border-radius:8px;padding:8px 12px;margin-bottom:12px}
 </style>
 </head>
 <body>
@@ -140,26 +171,26 @@ header .subtitle{color:var(--muted);font-size:.8rem}
 <header>
   <div>
     <h1>Power Rank Calculator</h1>
-    <div class="subtitle">Prime Communications · Real-time rank &amp; commission tracker</div>
+    <div class="subtitle">Prime Communications · Real-time rank & commission tracker</div>
   </div>
 </header>
 
 <div class="main-grid">
 
-<!-- ══ LEFT ══════════════════════════════════════════════ -->
+<!-- ══ LEFT COLUMN ══════════════════════════════════════════════ -->
 <div>
 
-  <!-- Upload -->
-  <div class="card">
+  <!-- Screenshot Upload -->
+  <div class="card" style="margin-bottom:12px">
     <div class="card-title">Upload Screenshot</div>
     <div class="upload-zone" id="uploadZone">
       <input type="file" id="fileInput" accept="image/*"/>
       <div class="upload-icon">📸</div>
-      <div class="upload-text"><strong>Click or drag</strong> your standings screenshot here</div>
-      <div class="upload-text" style="margin-top:3px;font-size:.7rem">PNG · JPG · HEIC — numbers auto-filled, always verify</div>
+      <div class="upload-text"><strong>Click or drag</strong> a screenshot here</div>
+      <div class="upload-text" style="margin-top:4px;font-size:.72rem">Supports PNG, JPG, HEIC — we'll try to read your numbers automatically</div>
     </div>
     <div id="previewWrap">
-      <img id="previewImg" src="" alt=""/>
+      <img id="previewImg" src="" alt="Screenshot preview"/>
       <div class="ocr-bar" id="ocrBar">
         <div class="ocr-progress"><div class="ocr-fill" id="ocrFill"></div></div>
         <div class="ocr-status" id="ocrStatus">Scanning…</div>
@@ -170,12 +201,20 @@ header .subtitle{color:var(--muted);font-size:.8rem}
         <button class="btn" onclick="clearImage()">Clear</button>
       </div>
     </div>
+    <div class="section-note" style="margin-top:10px;margin-bottom:0">
+      After scanning, verify each field — OCR may not be perfect. Edit any number and it recalculates instantly.
+    </div>
   </div>
 
-  <!-- Metrics form -->
+  <!-- Manual Inputs -->
   <div class="card">
-    <div class="card-title">Your Metrics</div>
-    <div class="note">Sales categories → enter % to goal.&nbsp; Protection / Rate Plan / Next Up → enter your actual attach %.</div>
+    <div class="card-title" style="display:flex;justify-content:space-between;align-items:center">
+      Your Metrics
+      <button class="btn" id="modeToggle" onclick="toggleInputMode()" style="font-size:.7rem;padding:4px 10px">Switch to Points Mode</button>
+    </div>
+    <div class="section-note" id="modeNote">
+      Sales categories → enter % to goal. &nbsp;Protection / Rate Plan / Next Up → enter your actual attach %.
+    </div>
     <div id="metricsForm"></div>
     <div class="btn-row">
       <button class="btn primary" onclick="recalc()">Calculate</button>
@@ -185,24 +224,24 @@ header .subtitle{color:var(--muted);font-size:.8rem}
 
 </div>
 
-<!-- ══ RIGHT ══════════════════════════════════════════════ -->
+<!-- ══ RIGHT COLUMN ═════════════════════════════════════════════ -->
 <div>
 
-  <!-- Rank hero -->
-  <div class="rank-hero">
-    <div class="rank-number" id="rankNum" style="color:var(--accent)">—<span class="rank-max">/10</span></div>
+  <!-- Rank Hero -->
+  <div class="rank-hero" id="rankHero">
+    <div class="rank-number" id="rankNum" style="color:var(--accent)">—<span class="rank-max" style="color:var(--accent)">/10</span></div>
     <div class="rank-label">Power Rank</div>
     <div class="rank-pts" id="rankPts"><strong>—</strong> / 100 pts</div>
     <div id="rankBadge" class="rank-badge badge-ok">Enter your metrics to begin</div>
   </div>
 
-  <!-- Breakdown -->
-  <div class="card">
+  <!-- Category breakdown (always visible) -->
+  <div class="card" style="margin-bottom:12px">
     <div class="card-title">Category Breakdown</div>
-    <table class="cat-table"><tbody id="catBody"></tbody></table>
+    <table class="cat-table" id="catTable"><tbody id="catBody"></tbody></table>
   </div>
 
-  <!-- Tabs -->
+  <!-- Tabs: Path / Commission / What-If -->
   <div class="card">
     <div class="tabs">
       <button class="tab active" onclick="showTab('path')">Path to Rank</button>
@@ -210,475 +249,463 @@ header .subtitle{color:var(--muted);font-size:.8rem}
       <button class="tab" onclick="showTab('whatif')">What-If</button>
     </div>
 
-    <!-- PATH -->
+    <!-- PATH TO RANK -->
     <div class="panel active" id="tab-path">
+      <div class="card-title">Select target rank</div>
       <div class="rank-btns" id="rankBtns"></div>
-      <div id="pathResult"><div class="empty-state">Enter your metrics, then pick a target rank above.</div></div>
+      <div id="pathResult"><div class="empty-state">Enter your metrics, then pick a target rank.</div></div>
     </div>
 
     <!-- COMMISSION -->
     <div class="panel" id="tab-commission">
-      <div class="note">Enter your MTD sale counts. Rates shown per your actual portal tiers — <em>rank 8/9/10 rates are estimates based on your payout schedule</em>.</div>
-
-      <div class="section-divider">Voice Sales</div>
-      <div class="input-grid-2" id="salesVoice"></div>
-
-      <div class="section-divider">Internet / BB</div>
-      <div class="input-grid-2" id="salesBB"></div>
-
-      <div class="section-divider">Upgrades &amp; Other</div>
-      <div class="input-grid-2" id="salesOther"></div>
-
-      <div class="section-divider">Protection</div>
-      <div class="input-grid-2" id="salesProtection"></div>
-
-      <div class="btn-row"><button class="btn primary" onclick="calcCommission()">Project Commission</button></div>
+      <div class="card-title">MTD Sales (enter counts)</div>
+      <div class="section-note">
+        Fill in your month-to-date sale counts. Calculator shows your pay at current rank vs. rank 9 vs. rank 10.
+      </div>
+      <div class="input-grid-2" id="salesForm"></div>
+      <div class="btn-row">
+        <button class="btn primary" onclick="calcCommission()">Project Commission</button>
+      </div>
       <div id="commResult" style="margin-top:14px"></div>
     </div>
 
     <!-- WHAT-IF -->
     <div class="panel" id="tab-whatif">
-      <div class="note">Override any metric to see the rank impact without changing your saved inputs.</div>
-      <div class="input-grid-2" id="whatifForm"></div>
+      <div class="card-title">Override any metric to see impact</div>
+      <div class="section-note">Simulates rank change without altering your saved inputs.</div>
+      <div id="whatifForm"></div>
       <div class="btn-row">
         <button class="btn primary" onclick="runWhatIf()">Simulate</button>
-        <button class="btn" onclick="clearWhatIf()">Clear</button>
+        <button class="btn" onclick="clearWhatIf()">Clear overrides</button>
       </div>
-      <div id="whatifResult" style="margin-top:12px"></div>
+      <div id="whatifResult" style="margin-top:14px"></div>
     </div>
-  </div>
 
-</div>
-</div>
-</div>
+  </div><!-- /right card -->
+</div><!-- /right col -->
+</div><!-- /main-grid -->
+</div><!-- /app -->
 
+<!-- Tesseract.js (loaded lazily when user uploads) -->
 <script>
 // ═══════════════════════════════════════════════════════
-// SCORING ENGINE
+//  SCORING ENGINE
 // ═══════════════════════════════════════════════════════
 
 const METRIC_CFG = [
-  {id:'opps',        label:'Opps',        max:15, attach:false},
-  {id:'ppvga',       label:'PPVGA',       max:35, attach:false},
-  {id:'fiber',       label:'Fiber',       max:15, attach:false},
-  {id:'aia',         label:'AIA',         max:10, attach:false},
-  {id:'accessories', label:'Accessories', max:10, attach:false},
-  {id:'protection',  label:'Protection',  max:5,  attach:true},
-  {id:'rate_plan',   label:'Rate Plan %', max:5,  attach:true},
-  {id:'next_up',     label:'Next Up',     max:5,  attach:true},
+  {id:'opps',       label:'Opps',         max:15, attach:false, hint:'% to goal'},
+  {id:'ppvga',      label:'PPVGA',        max:35, attach:false, hint:'% to goal'},
+  {id:'fiber',      label:'Fiber',        max:15, attach:false, hint:'% to goal'},
+  {id:'aia',        label:'AIA',          max:10, attach:false, hint:'% to goal'},
+  {id:'accessories',label:'Accessories',  max:10, attach:false, hint:'% to goal'},
+  {id:'protection', label:'Protection',   max:5,  attach:true,  hint:'attach %'},
+  {id:'rate_plan',  label:'Rate Plan %',  max:5,  attach:true,  hint:'attach %'},
+  {id:'next_up',    label:'Next Up',      max:5,  attach:true,  hint:'attach %'},
 ];
 
-const SALES_MUL={125:1.0,100:0.9,90:0.8,80:0.7,70:0.6,60:0.5,50:0.4,40:0.3,30:0.2,20:0.1,0:0};
-const SALES_THR=Object.keys(SALES_MUL).map(Number).sort((a,b)=>b-a);
-const PROT_TBL =[[70,5],[68,4.5],[66,4],[63,3.5],[60,3]];
-const RPLAN_TBL=[[82,5],[80,4.5],[78,4],[76,3.5],[74,3]];
-const NUP_TBL  =[[80,5],[78,4.5],[76,4],[74,3.5],[72,3]];
-const ATTACH_TBL={protection:PROT_TBL,rate_plan:RPLAN_TBL,next_up:NUP_TBL};
+const SALES_MUL = {125:1.0,100:0.9,90:0.8,80:0.7,70:0.6,60:0.5,50:0.4,40:0.3,30:0.2,20:0.1,0:0};
+const SALES_THR = Object.keys(SALES_MUL).map(Number).sort((a,b)=>b-a);
 
-function p2p(id,pct){
-  if(pct===null||isNaN(pct))return 0;
-  const tbl=ATTACH_TBL[id];
-  if(tbl){for(const[t,p]of tbl)if(pct>=t)return p;return 0;}
-  const cfg=METRIC_CFG.find(m=>m.id===id);if(!cfg)return 0;
-  for(const t of SALES_THR)if(pct>=t)return Math.round(cfg.max*SALES_MUL[t]*100)/100;
+const PROT_TBL  = [[70,5],[68,4.5],[66,4],[63,3.5],[60,3]];
+const RPLAN_TBL = [[82,5],[80,4.5],[78,4],[76,3.5],[74,3]];
+const NUP_TBL   = [[80,5],[78,4.5],[76,4],[74,3.5],[72,3]];
+const ATTACH_TBL= {protection:PROT_TBL, rate_plan:RPLAN_TBL, next_up:NUP_TBL};
+
+const COMM_TIERS = {
+  rank_8: {nv_premium:35,nv_extra:25,nv_starter:15,fiber_aia:50,upgrade:5,acc_pct:0.06,pa1:3,pa4:6,htp:6},
+  rank_9: {nv_premium:70,nv_extra:50,nv_starter:25,fiber_aia:60,upgrade:5,acc_pct:0.07,pa1:4,pa4:10,htp:10},
+  rank_10:{nv_premium:90,nv_extra:65,nv_starter:35,fiber_aia:75,upgrade:5,acc_pct:0.08,pa1:5,pa4:13,htp:13},
+};
+
+const SALES_CFG = [
+  {id:'nv_premium', label:'New Voice Premium',      unit:'count'},
+  {id:'nv_extra',   label:'New Voice Extra',         unit:'count'},
+  {id:'nv_starter', label:'New Voice Starter',       unit:'count'},
+  {id:'fiber_aia',  label:'Fiber / AIA Sales',       unit:'count'},
+  {id:'upgrade',    label:'Voice Upgrades',           unit:'count'},
+  {id:'acc_rev',    label:'Accessories Revenue',      unit:'$'},
+  {id:'pa1',        label:'PA1',                      unit:'count'},
+  {id:'pa4',        label:'PA4',                      unit:'count'},
+  {id:'htp',        label:'HTP',                      unit:'count'},
+];
+
+function p2p(id, val) {
+  if (val === null || isNaN(val)) return 0;
+  if (inputMode==='pts') {
+    const cfg=METRIC_CFG.find(m=>m.id===id);
+    return cfg ? Math.min(Math.max(0,val), cfg.max) : 0;
+  }
+  const tbl = ATTACH_TBL[id];
+  if (tbl) { for (const [t,p] of tbl) if (val >= t) return p; return 0; }
+  const cfg = METRIC_CFG.find(m=>m.id===id); if (!cfg) return 0;
+  for (const t of SALES_THR) if (val >= t) return Math.round(cfg.max*SALES_MUL[t]*100)/100;
   return 0;
 }
 
-function computeAll(metrics){
-  let total=0;const pts={};
-  for(const m of METRIC_CFG){pts[m.id]=p2p(m.id,metrics[m.id]??0);total+=pts[m.id];}
+function computeAll(metrics) {
+  let total=0;
+  const pts={};
+  for (const m of METRIC_CFG) {
+    const v=metrics[m.id]??0;
+    pts[m.id]=p2p(m.id,v);
+    total+=pts[m.id];
+  }
   total=Math.round(total*100)/100;
-  return{pts,total,rank:Math.round(total/10*100)/100};
+  return {pts,total,rank:Math.floor(total)/10};
 }
 
-function pathToRank(metrics,targetRank){
-  const{pts:curPts,total:curTotal,rank:curRk}=computeAll(metrics);
+function pathToRank(metrics,targetRank) {
+  const {pts:curPts,total:curTotal,rank:curRk}=computeAll(metrics);
   const targetTotal=targetRank*10;
   const needed=Math.max(0,Math.round((targetTotal-curTotal)*100)/100);
   const cands=[];
-  for(const m of METRIC_CFG){
-    const curPct=metrics[m.id]||0,curPt=p2p(m.id,curPct),maxPt=p2p(m.id,125);
+  for (const m of METRIC_CFG) {
+    const curVal=metrics[m.id]||0;
+    const curPt=p2p(m.id,curVal);
+    const maxPt=inputMode==='pts'?m.max:p2p(m.id,125);
     const gain=Math.round((maxPt-curPt)*100)/100;
-    if(gain>0)cands.push({id:m.id,label:m.label,curPct,curPt,maxPt,gain});
+    if(gain>0) cands.push({id:m.id,label:m.label,curPct:curVal,curPt,maxPt,gain});
   }
   cands.sort((a,b)=>b.gain-a.gain);
-  const actions=[];let proj=curTotal;
-  for(const c of cands){if(proj>=targetTotal)break;actions.push({...c});proj=Math.round((proj+c.gain)*100)/100;}
-  return{curRk,curTotal,targetRank,targetTotal,needed,actions,proj,projRank:Math.round(proj/10*100)/100};
+  const actions=[]; let proj=curTotal;
+  for (const c of cands) {
+    if(proj>=targetTotal) break;
+    actions.push({...c});
+    proj=Math.round((proj+c.gain)*100)/100;
+  }
+  return {curRk,curTotal,targetRank,targetTotal,needed,actions,proj,projRank:Math.floor(proj)/10};
 }
 
-// ═══════════════════════════════════════════════════════
-// COMMISSION — tiers matched to actual portal rates
-// ═══════════════════════════════════════════════════════
-
-// Each tier key must match SALES_CFG ids
-const COMM_TIERS = {
-  // Actual rates from your portal at rank 7.8
-  below_8: {
-    nv_premium:20, nv_extra:15, nv_starter:10,
-    bb_1g:40,      bb_500:30,   bb_c2f:20,
-    upgrade:5,     tablet:4,    acc_pct:0.03,
-    htp:4,         pa4:4,       pa1:2,   ppvga_int:10,
-  },
-  // Rank 8 estimated rates (per your payout schedule)
-  rank_8: {
-    nv_premium:35, nv_extra:25, nv_starter:15,
-    bb_1g:50,      bb_500:40,   bb_c2f:30,
-    upgrade:5,     tablet:4,    acc_pct:0.06,
-    htp:6,         pa4:6,       pa1:3,   ppvga_int:10,
-  },
-  rank_9: {
-    nv_premium:70, nv_extra:50, nv_starter:25,
-    bb_1g:60,      bb_500:50,   bb_c2f:40,
-    upgrade:5,     tablet:4,    acc_pct:0.07,
-    htp:10,        pa4:10,      pa1:4,   ppvga_int:10,
-  },
-  rank_10: {
-    nv_premium:90, nv_extra:65, nv_starter:35,
-    bb_1g:75,      bb_500:65,   bb_c2f:50,
-    upgrade:5,     tablet:4,    acc_pct:0.08,
-    htp:13,        pa4:13,      pa1:5,   ppvga_int:10,
-  },
-};
-
-const SALES_GROUPS = {
-  salesVoice: [
-    {id:'nv_premium', label:'New Voice Premium',   unit:'count'},
-    {id:'nv_extra',   label:'New Voice Extra',      unit:'count'},
-    {id:'nv_starter', label:'New Voice Starter',    unit:'count'},
-    {id:'ppvga_int',  label:'PPVGA / Internet',     unit:'count'},
-  ],
-  salesBB: [
-    {id:'bb_1g',  label:'BB 1 Gbps+ / AIA',         unit:'count'},
-    {id:'bb_500', label:'BB 500 Mbps',               unit:'count'},
-    {id:'bb_c2f', label:'BB <500 Mbps / C2F Upgrades', unit:'count'},
-  ],
-  salesOther: [
-    {id:'upgrade', label:'Voice Upgrades',           unit:'count'},
-    {id:'tablet',  label:'Tablets & Wearables',      unit:'count'},
-    {id:'acc_rev', label:'Accessories Revenue',       unit:'$'},
-  ],
-  salesProtection: [
-    {id:'htp', label:'Protection: HTP',              unit:'count'},
-    {id:'pa4', label:'Protection: PA4',              unit:'count'},
-    {id:'pa1', label:'Protection: PA1',              unit:'count'},
-  ],
-};
-
-function tierKey(rank){
-  if(rank>=10)return'rank_10';
-  if(rank>=9) return'rank_9';
-  if(rank>=8) return'rank_8';
-  return'below_8';
-}
-
-function calcPay(sales,key){
-  const r=COMM_TIERS[key];
+function calcPay(sales,tierKey) {
+  const r=COMM_TIERS[tierKey]||COMM_TIERS.rank_8;
   return Math.round((
     (sales.nv_premium||0)*r.nv_premium+
     (sales.nv_extra||0)*r.nv_extra+
     (sales.nv_starter||0)*r.nv_starter+
-    (sales.bb_1g||0)*r.bb_1g+
-    (sales.bb_500||0)*r.bb_500+
-    (sales.bb_c2f||0)*r.bb_c2f+
+    (sales.fiber_aia||0)*r.fiber_aia+
     (sales.upgrade||0)*r.upgrade+
-    (sales.tablet||0)*r.tablet+
     (sales.acc_rev||0)*r.acc_pct+
-    (sales.htp||0)*r.htp+
-    (sales.pa4||0)*r.pa4+
     (sales.pa1||0)*r.pa1+
-    (sales.ppvga_int||0)*r.ppvga_int
+    (sales.pa4||0)*r.pa4+
+    (sales.htp||0)*r.htp
   )*100)/100;
 }
 
 // ═══════════════════════════════════════════════════════
-// OCR KEYWORD MAP
+//  STATE
 // ═══════════════════════════════════════════════════════
 
-const OCR_KEYWORDS=[
-  {keys:['next up','next-up','nextup'],          id:'next_up'},
-  {keys:['rate plan','rate plan %','rateplan'],  id:'rate_plan'},
-  {keys:['protect'],                              id:'protection'},
-  {keys:['accessor'],                             id:'accessories'},
-  {keys:['fiber','fibre'],                        id:'fiber'},
-  {keys:['aia'],                                  id:'aia'},
-  {keys:['ppvga','pvga','premium voice'],         id:'ppvga'},
-  {keys:['opps','opp '],                          id:'opps'},
-];
-
-// ═══════════════════════════════════════════════════════
-// STATE
-// ═══════════════════════════════════════════════════════
-
-let state={};
+let state={}; // metric id → value (% or pts depending on inputMode)
 let targetRank=9.0;
 let uploadedImg=null;
+let inputMode='pct'; // 'pct' = % to goal / attach %; 'pts' = points earned directly
 
 // ═══════════════════════════════════════════════════════
-// BUILD UI
+//  UI BUILDERS
 // ═══════════════════════════════════════════════════════
 
-function buildMetricsForm(){
+function buildMetricsForm() {
   const el=document.getElementById('metricsForm');
   el.innerHTML='';
-  for(const m of METRIC_CFG){
-    const d=document.createElement('div');d.className='field';
-    d.innerHTML=`<label>${m.label}<span class="hint">${m.attach?'attach %':'% to goal'} · ${m.max}pts max</span></label>
-    <div class="input-wrap">
-      <input type="number" id="inp_${m.id}" min="0" max="300" step="0.1"
-             placeholder="${m.attach?'e.g. 47':'e.g. 187'}" oninput="onMetricInput('${m.id}',this.value)"/>
-      <span class="suffix">%</span>
-      <span class="pts-badge" id="pb_${m.id}" style="color:var(--muted)">0/${m.max}</span>
-    </div>`;
-    el.appendChild(d);
+  const isPts=inputMode==='pts';
+  for (const m of METRIC_CFG) {
+    const div=document.createElement('div');
+    div.className='field';
+    const hint=isPts?`pts of ${m.max}`:m.attach?'attach %':'% to goal';
+    const ph=isPts?`0–${m.max}`:m.attach?'0–100':'0–300';
+    const sfx=isPts?'pts':'%';
+    div.innerHTML=`
+      <label>${m.label} <span class="field-hint">${hint} · max ${m.max} pts</span></label>
+      <div class="input-wrap">
+        <input type="number" id="inp_${m.id}" min="0" max="${isPts?m.max:300}" step="${isPts?0.5:0.1}"
+               placeholder="${ph}" oninput="onMetricInput('${m.id}',this.value)"/>
+        <span class="suffix">${sfx}</span>
+        <span class="pts-badge" id="pb_${m.id}" style="color:var(--muted)">0 / ${m.max}</span>
+      </div>`;
+    el.appendChild(div);
   }
 }
 
-function buildSalesForm(){
-  for(const[groupId,items]of Object.entries(SALES_GROUPS)){
-    const el=document.getElementById(groupId);
-    el.innerHTML='';
-    for(const s of items){
-      const d=document.createElement('div');d.className='field';
-      d.innerHTML=`<label>${s.label}</label>
+function toggleInputMode() {
+  inputMode=inputMode==='pct'?'pts':'pct';
+  state={};
+  buildMetricsForm();
+  updateUI();
+  const btn=document.getElementById('modeToggle');
+  if(btn) btn.textContent=inputMode==='pts'?'Switch to % Mode':'Switch to Points Mode';
+  const note=document.getElementById('modeNote');
+  if(note) note.textContent=inputMode==='pts'
+    ?”Points Earned mode: enter the number from “X of Y PTS” on your portal circles.”
+    :"Sales categories → enter % to goal.  Protection / Rate Plan / Next Up → enter your actual attach %.";
+}
+
+function buildWhatIfForm() {
+  const el=document.getElementById('whatifForm');
+  el.innerHTML='';
+  const grid=document.createElement('div');
+  grid.className='input-grid-2';
+  for (const m of METRIC_CFG) {
+    const div=document.createElement('div');
+    div.className='field';
+    div.innerHTML=`
+      <label>${m.label}</label>
+      <div class="input-wrap">
+        <input type="number" id="wi_${m.id}" min="0" max="300" step="0.1" placeholder="—"/>
+        <span class="suffix">%</span>
+      </div>`;
+    grid.appendChild(div);
+  }
+  el.appendChild(grid);
+}
+
+function buildSalesForm() {
+  const el=document.getElementById('salesForm');
+  el.innerHTML='';
+  for (const s of SALES_CFG) {
+    const div=document.createElement('div');
+    div.className='field';
+    div.innerHTML=`
+      <label>${s.label}</label>
       <div class="input-wrap">
         <input type="number" id="sale_${s.id}" min="0" step="${s.unit==='$'?'0.01':'1'}" placeholder="0"/>
         <span class="suffix">${s.unit}</span>
       </div>`;
-      el.appendChild(d);
-    }
+    el.appendChild(div);
   }
 }
 
-function buildWhatIfForm(){
-  const el=document.getElementById('whatifForm');el.innerHTML='';
-  for(const m of METRIC_CFG){
-    const d=document.createElement('div');d.className='field';
-    d.innerHTML=`<label>${m.label}</label>
-    <div class="input-wrap">
-      <input type="number" id="wi_${m.id}" min="0" max="300" step="0.1" placeholder="—"/>
-      <span class="suffix">%</span>
-    </div>`;
-    el.appendChild(d);
-  }
-}
-
-function buildRankBtns(){
-  const el=document.getElementById('rankBtns');el.innerHTML='';
+function buildRankBtns() {
+  const el=document.getElementById('rankBtns');
   [8.0,8.5,9.0,9.5,10.0].forEach(r=>{
     const b=document.createElement('button');
     b.className='rank-btn'+(r===targetRank?' active':'');
     b.textContent=r.toFixed(1);
-    b.onclick=()=>{targetRank=r;document.querySelectorAll('.rank-btn').forEach(x=>x.classList.remove('active'));b.classList.add('active');refreshPath();};
+    b.onclick=()=>{
+      targetRank=r;
+      document.querySelectorAll('.rank-btn').forEach(x=>x.classList.remove('active'));
+      b.classList.add('active');
+      refreshPath();
+    };
     el.appendChild(b);
   });
 }
 
-function buildCatTable(){
-  const tb=document.getElementById('catBody');tb.innerHTML='';
-  for(const m of METRIC_CFG){
+function buildCatTable() {
+  const tb=document.getElementById('catBody');
+  tb.innerHTML='';
+  for (const m of METRIC_CFG) {
     const tr=document.createElement('tr');
-    tr.innerHTML=`<td class="cat-name">${m.label}</td>
-    <td style="width:100%"><div class="cat-bar-wrap"><div class="cat-bar" id="bar_${m.id}" style="width:0%;background:var(--accent)"></div></div></td>
-    <td class="cat-pts-val" id="cpv_${m.id}" style="color:var(--muted)">0</td>
-    <td class="cat-pts-max">/${m.max}</td>`;
+    tr.innerHTML=`
+      <td class="cat-name">${m.label}</td>
+      <td style="width:100%"><div class="cat-bar-wrap"><div class="cat-bar" id="bar_${m.id}" style="width:0%;background:var(--accent)"></div></div></td>
+      <td class="cat-pts-val" id="cpv_${m.id}" style="color:var(--muted)">0</td>
+      <td class="cat-pts-max">/ ${m.max}</td>`;
     tb.appendChild(tr);
   }
 }
 
 // ═══════════════════════════════════════════════════════
-// RECALC
+//  RECALC & UI UPDATE
 // ═══════════════════════════════════════════════════════
 
-function onMetricInput(id,val){
+function onMetricInput(id,val) {
   const v=parseFloat(val);
-  if(!isNaN(v)&&val!=='')state[id]=v;else delete state[id];
+  if(!isNaN(v)&&val!=='') state[id]=v; else delete state[id];
   updateUI();
 }
 
-function recalc(){
-  for(const m of METRIC_CFG){
+function recalc() {
+  for (const m of METRIC_CFG) {
     const el=document.getElementById('inp_'+m.id);
     const v=parseFloat(el?.value);
-    if(!isNaN(v)&&el?.value!=='')state[m.id]=v;else delete state[m.id];
+    if(!isNaN(v)&&el?.value!=='') state[m.id]=v; else delete state[m.id];
   }
   updateUI();
 }
 
-function updateUI(){
-  const{pts,total,rank}=computeAll(state);
-  const col=rank>=9.5?'var(--green)':rank>=8.5?'var(--accent2)':rank>=8?'var(--yellow)':rank>0?'var(--red)':'var(--accent)';
+function updateUI() {
+  const {pts,total,rank}=computeAll(state);
 
-  document.getElementById('rankNum').innerHTML=
-    `<span style="color:${col}">${rank>0?rank.toFixed(1):'—'}</span><span class="rank-max" style="color:${col};opacity:.35">/10</span>`;
+  // Rank hero
+  const col=rank>=9.5?'var(--green)':rank>=8.5?'var(--accent2)':rank>=8?'var(--yellow)':rank>0?'var(--red)':'var(--accent)';
+  document.getElementById('rankNum').innerHTML=`<span style="color:${col}">${rank>0?rank.toFixed(1):'—'}</span><span class="rank-max" style="color:${col};opacity:.35">/10</span>`;
   document.getElementById('rankPts').innerHTML=`<strong>${total>0?total.toFixed(2):'—'}</strong> / 100 pts`;
 
   const badge=document.getElementById('rankBadge');
   if(rank>=10){badge.textContent='🏆 Perfect Score — Rank 10!';badge.className='rank-badge badge-great';}
   else if(rank>=9.5){badge.textContent='🔥 Elite — push for 10.0';badge.className='rank-badge badge-great';}
-  else if(rank>=9){badge.textContent='⚡ Rank 9 — great position';badge.className='rank-badge badge-good';}
+  else if(rank>=9.0){badge.textContent='⚡ Rank 9 — great position';badge.className='rank-badge badge-good';}
   else if(rank>=8.5){badge.textContent='👍 Strong — one push from 9';badge.className='rank-badge badge-ok';}
-  else if(rank>=8){badge.textContent='⚠️ At 8.0 — build cushion';badge.className='rank-badge badge-ok';}
+  else if(rank>=8.0){badge.textContent='⚠️ At 8.0 — build cushion now';badge.className='rank-badge badge-ok';}
   else if(rank>0){badge.textContent='🚨 Below 8.0 — take action today';badge.className='rank-badge badge-danger';}
   else{badge.textContent='Enter your metrics to begin';badge.className='rank-badge badge-ok';}
 
-  for(const m of METRIC_CFG){
-    const pct=state[m.id]||0,p=pts[m.id]||0;
+  // Per-metric badges & bars
+  for (const m of METRIC_CFG) {
+    const pct=state[m.id]||0;
+    const p=pts[m.id]||0;
     const barPct=Math.min(100,(p/m.max)*100);
-    const barCol=pct>=100?'var(--green)':pct>=70?'var(--accent)':pct>=50?'var(--yellow)':'var(--red)';
+    const fullPts=inputMode==='pts'?m.max:p2p(m.id,125);
+    const barCol=p>=fullPts?'var(--green)':p>=fullPts*0.7?'var(--accent)':p>=fullPts*0.5?'var(--yellow)':'var(--red)';
     const bar=document.getElementById('bar_'+m.id);
     if(bar){bar.style.width=barPct+'%';bar.style.background=barCol;}
     const cpv=document.getElementById('cpv_'+m.id);
     if(cpv){cpv.textContent=p%1===0?p:p.toFixed(1);cpv.style.color=barCol;}
     const pb=document.getElementById('pb_'+m.id);
-    if(pb){pb.textContent=`${p%1===0?p:p.toFixed(1)}/${m.max}`;pb.style.color=p>=m.max?'var(--green)':p>0?'var(--accent2)':'var(--muted)';}
+    if(pb){pb.textContent=`${p%1===0?p:p.toFixed(1)} / ${m.max}`;pb.style.color=p>=m.max?'var(--green)':p>0?'var(--accent2)':'var(--muted)';}
   }
 
   refreshPath();
 }
 
-function refreshPath(){
-  const{curRk,curTotal,needed,actions,proj,projRank}=pathToRank(state,targetRank);
+function refreshPath() {
+  const {curRk,curTotal,needed,actions,proj,projRank}=pathToRank(state,targetRank);
   const el=document.getElementById('pathResult');
   if(!Object.keys(state).length){el.innerHTML='<div class="empty-state">Enter your metrics, then pick a target rank.</div>';return;}
+
   if(needed<=0){
     el.innerHTML=`<div class="action-card" style="background:rgba(52,211,153,.08);border-color:rgba(52,211,153,.3)">
-      <div><div class="ac-metric" style="color:var(--green)">✅ You already hit rank ${targetRank.toFixed(1)}!</div>
-      <div class="ac-sub">Current rank: ${curRk.toFixed(2)} · ${curTotal.toFixed(2)} pts</div></div></div>`;
+      <div class="ac-left"><div class="ac-metric" style="color:var(--green)">✅ You already hit rank ${targetRank.toFixed(1)}!</div>
+      <div class="ac-sub">Current rank: ${curRk.toFixed(1)} · ${curTotal.toFixed(2)} pts</div></div></div>`;
     return;
   }
+
   let html=`<div class="stat-row">
     <div class="stat-box"><div class="stat-val" style="color:var(--accent)">${curRk.toFixed(1)}</div><div class="stat-lbl">Current rank</div></div>
-    <div class="stat-box"><div class="stat-val" style="color:var(--warn)">+${needed.toFixed(1)}</div><div class="stat-lbl">Points needed</div></div>
-    <div class="stat-box"><div class="stat-val" style="color:var(--green)">${projRank.toFixed(1)}</div><div class="stat-lbl">After these moves</div></div>
-  </div>`;
-  for(const[i,a]of actions.entries())
-    html+=`<div class="action-card"><div><div class="ac-metric">${i+1}. ${a.label}</div>
-    <div class="ac-sub">Currently ${a.curPct.toFixed(1)}% — max out for ${a.maxPt} pts (gain +${a.gain})</div></div>
-    <span class="ac-badge">+${a.gain} pts</span></div>`;
+    <div class="stat-box"><div class="stat-val" style="color:var(--warn)">+${needed.toFixed(1)}</div><div class="stat-lbl">Pts needed</div></div>
+    <div class="stat-box"><div class="stat-val" style="color:var(--green)">${projRank.toFixed(1)}</div><div class="stat-lbl">If you do these moves</div></div>
+  </div>
+  <div class="card-title">Recommended moves</div>`;
+
+  for (const [i,a] of actions.entries()) {
+    const step=i+1;
+    html+=`<div class="action-card">
+      <div class="ac-left">
+        <div class="ac-metric">${step}. ${a.label}</div>
+        <div class="ac-sub">Currently ${a.curPct.toFixed(1)}${inputMode==='pts'?'':'%'} → max out (${a.maxPt} pts)</div>
+      </div>
+      <span class="ac-badge">+${a.gain} pts</span>
+    </div>`;
+  }
+
+  const gap=Math.max(0,Math.round((targetRank*10-proj)*100)/100);
+  if(gap>0) html+=`<div style="font-size:.78rem;color:var(--muted);margin-top:8px;text-align:center">Even after these moves, gap to ${targetRank.toFixed(1)} is <strong>${gap} pts</strong> — focus on Fiber or PPVGA first.</div>`;
+
   el.innerHTML=html;
 }
 
 // ═══════════════════════════════════════════════════════
-// COMMISSION
+//  COMMISSION
 // ═══════════════════════════════════════════════════════
 
-function readSales(){
+function readSales() {
   const s={};
-  for(const items of Object.values(SALES_GROUPS))
-    for(const c of items){const v=parseFloat(document.getElementById('sale_'+c.id)?.value);if(!isNaN(v))s[c.id]=v;}
+  for (const c of SALES_CFG) { const v=parseFloat(document.getElementById('sale_'+c.id)?.value); if(!isNaN(v)) s[c.id]=v; }
   return s;
 }
 
-function calcCommission(){
+function calcCommission() {
   const sales=readSales();
-  const{rank}=computeAll(state);
-  const curKey=tierKey(rank);
+  const {rank}=computeAll(state);
+  const tierKey=rank>=10?'rank_10':rank>=9?'rank_9':'rank_8';
+  const cur=calcPay(sales,tierKey);
+  const r9=calcPay(sales,'rank_9');
+  const r10=calcPay(sales,'rank_10');
   const fmt=v=>'$'+v.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
 
-  const payBelow8=calcPay(sales,'below_8');
-  const pay8=calcPay(sales,'rank_8');
-  const pay9=calcPay(sales,'rank_9');
-  const pay10=calcPay(sales,'rank_10');
-  const curPay=calcPay(sales,curKey);
-
-  const tierLabels={below_8:'Below 8',rank_8:'Rank 8',rank_9:'Rank 9',rank_10:'Rank 10'};
-  const tierColors={below_8:'var(--red)',rank_8:'var(--yellow)',rank_9:'var(--accent2)',rank_10:'var(--gold)'};
-
-  const tiers=[
-    {key:'below_8',pay:payBelow8,label:'Below 8.0',rank:'< 8.0',col:'var(--red)'},
-    {key:'rank_8', pay:pay8,     label:'Rank 8',   rank:'8.0–8.9',col:'var(--yellow)'},
-    {key:'rank_9', pay:pay9,     label:'Rank 9',   rank:'9.0–9.9',col:'var(--accent2)'},
-    {key:'rank_10',pay:pay10,    label:'Rank 10',  rank:'10.0',col:'var(--gold)'},
-  ];
-
-  let html=`<div class="tier-grid">`;
-  for(const t of tiers)
-    html+=`<div class="tier-box${t.key===curKey?' active-tier':''}">
-      <div class="tier-val" style="color:${t.col}">${fmt(t.pay)}</div>
-      <div class="tier-lbl">${t.label}</div>
-      <div class="tier-rank">${t.rank}</div>
+  const el=document.getElementById('commResult');
+  el.innerHTML=`
+    <div class="stat-row" style="grid-template-columns:1fr 1fr 1fr">
+      <div class="stat-box"><div class="stat-val" style="color:var(--accent)">${fmt(cur)}</div><div class="stat-lbl">Current (rank ${rank.toFixed(1)})</div></div>
+      <div class="stat-box"><div class="stat-val" style="color:var(--accent2)">${fmt(r9)}</div><div class="stat-lbl">At rank 9.0</div></div>
+      <div class="stat-box"><div class="stat-val" style="color:var(--gold)">${fmt(r10)}</div><div class="stat-lbl">At rank 10.0</div></div>
+    </div>
+    <div class="comm-uplift-box">
+      <div style="font-size:.78rem;color:var(--muted);margin-bottom:4px">Uplift if you hit rank 9 with same sales</div>
+      <div class="comm-big comm-green">${fmt(r9-cur)} more</div>
+    </div>
+    <div style="margin-top:12px">
+      <div class="comm-row"><span>Pay at current rank</span><span class="comm-val">${fmt(cur)}</span></div>
+      <div class="comm-row"><span>Pay at rank 9</span><span class="comm-val comm-green">${fmt(r9)}</span></div>
+      <div class="comm-row"><span>Pay at rank 10 (max)</span><span class="comm-val" style="color:var(--gold)">${fmt(r10)}</span></div>
+      <div class="comm-row"><span>Rank 9 uplift vs current</span><span class="comm-val comm-green">+${fmt(r9-cur)}</span></div>
+      <div class="comm-row"><span>Rank 10 uplift vs current</span><span class="comm-val" style="color:var(--gold)">+${fmt(r10-cur)}</span></div>
     </div>`;
-  html+=`</div>`;
-
-  const uplift9=Math.round((pay9-curPay)*100)/100;
-  const uplift10=Math.round((pay10-curPay)*100)/100;
-
-  html+=`<div class="comm-uplift-box">
-    <div style="font-size:.72rem;color:var(--muted);margin-bottom:3px">If you hit rank 9 with these same sales</div>
-    <div class="comm-big comm-green">${fmt(uplift9)} more</div>
-  </div>`;
-
-  html+=`<div style="margin-top:10px">
-    <div class="comm-row"><span>Your current rank</span><span class="comm-val">${rank>0?rank.toFixed(2):'—'} (${tierLabels[curKey]})</span></div>
-    <div class="comm-row"><span>Pay at current rank</span><span class="comm-val">${fmt(curPay)}</span></div>
-    <div class="comm-row"><span>Pay at rank 8</span><span class="comm-val" style="color:var(--yellow)">${fmt(pay8)}</span></div>
-    <div class="comm-row"><span>Pay at rank 9</span><span class="comm-val comm-green">${fmt(pay9)}</span></div>
-    <div class="comm-row"><span>Pay at rank 10</span><span class="comm-val comm-gold">${fmt(pay10)}</span></div>
-    <div class="comm-row"><span>Uplift → rank 9</span><span class="comm-val comm-green">+${fmt(uplift9)}</span></div>
-    <div class="comm-row"><span>Uplift → rank 10</span><span class="comm-val comm-gold">+${fmt(uplift10)}</span></div>
-  </div>`;
-
-  document.getElementById('commResult').innerHTML=html;
 }
 
 // ═══════════════════════════════════════════════════════
-// WHAT-IF
+//  WHAT-IF
 // ═══════════════════════════════════════════════════════
 
-function runWhatIf(){
+function runWhatIf() {
   const overrides={};
-  for(const m of METRIC_CFG){const v=parseFloat(document.getElementById('wi_'+m.id)?.value);if(!isNaN(v))overrides[m.id]=v;}
-  if(!Object.keys(overrides).length){document.getElementById('whatifResult').innerHTML='<div class="empty-state">Override at least one metric value above.</div>';return;}
-  const bef=computeAll(state);
-  const aft=computeAll({...state,...overrides});
-  const rD=Math.round((aft.rank-bef.rank)*100)/100;
-  const pD=Math.round((aft.total-bef.total)*100)/100;
+  for (const m of METRIC_CFG) {
+    const v=parseFloat(document.getElementById('wi_'+m.id)?.value);
+    if(!isNaN(v)) overrides[m.id]=v;
+  }
+  if(!Object.keys(overrides).length){
+    document.getElementById('whatifResult').innerHTML='<div class="empty-state">Override at least one metric value above.</div>';
+    return;
+  }
+
+  const base={...state};
+  const after={...base,...overrides};
+  const bef=computeAll(base);
+  const aft=computeAll(after);
+  const rDelta=Math.round((aft.rank-bef.rank)*100)/100;
+  const pDelta=Math.round((aft.total-bef.total)*100)/100;
   const sign=d=>d>0?'+'+d:String(d);
   const col=d=>d>0?'var(--green)':d<0?'var(--red)':'var(--muted)';
+
   let html=`<div class="stat-row">
     <div class="stat-box"><div class="stat-val" style="color:var(--accent)">${bef.rank.toFixed(1)}</div><div class="stat-lbl">Before</div></div>
-    <div class="stat-box"><div class="stat-val" style="color:${col(rD)}">${sign(rD)}</div><div class="stat-lbl">Rank change</div></div>
-    <div class="stat-box"><div class="stat-val" style="color:${col(rD)}">${aft.rank.toFixed(1)}</div><div class="stat-lbl">After</div></div>
-  </div><div>`;
-  for(const m of METRIC_CFG){
-    if(!(m.id in overrides))continue;
+    <div class="stat-box"><div class="stat-val" style="color:${col(rDelta)}">${sign(rDelta)}</div><div class="stat-lbl">Rank change</div></div>
+    <div class="stat-box"><div class="stat-val" style="color:${col(rDelta)}">${aft.rank.toFixed(1)}</div><div class="stat-lbl">After</div></div>
+  </div>`;
+
+  html+='<div style="margin-top:4px">';
+  for (const m of METRIC_CFG) {
+    if(!(m.id in overrides)) continue;
     const d=Math.round(((aft.pts[m.id]||0)-(bef.pts[m.id]||0))*100)/100;
-    html+=`<div class="comm-row"><span>${m.label} <span class="tag tag-blue">${(state[m.id]||0).toFixed(1)}%→${overrides[m.id].toFixed(1)}%</span></span>
-    <span class="comm-val" style="color:${col(d)}">${sign(d)} pts</span></div>`;
+    html+=`<div class="comm-row">
+      <span>${m.label} <span class="tag ${d>0?'tag-green':d<0?'tag-red':'tag-blue'}">${(base[m.id]||0).toFixed(1)}% → ${overrides[m.id].toFixed(1)}%</span></span>
+      <span class="comm-val" style="color:${col(d)}">${sign(d)} pts</span>
+    </div>`;
   }
-  html+=`<div class="comm-row"><span><strong>Total</strong></span><span class="comm-val" style="color:${col(pD)}">${sign(pD)} pts → rank ${aft.rank.toFixed(1)}</span></div></div>`;
+  html+=`<div class="comm-row"><span><strong>Total change</strong></span><span class="comm-val" style="color:${col(pDelta)}">${sign(pDelta)} pts → rank ${aft.rank.toFixed(1)}</span></div>`;
+  html+='</div>';
+
   document.getElementById('whatifResult').innerHTML=html;
 }
 
-function clearWhatIf(){
-  for(const m of METRIC_CFG){const el=document.getElementById('wi_'+m.id);if(el)el.value='';}
+function clearWhatIf() {
+  for (const m of METRIC_CFG) { const el=document.getElementById('wi_'+m.id); if(el) el.value=''; }
   document.getElementById('whatifResult').innerHTML='';
 }
 
 // ═══════════════════════════════════════════════════════
-// RESET
+//  RESET
 // ═══════════════════════════════════════════════════════
 
-function resetAll(){
+function resetAll() {
   state={};
-  for(const m of METRIC_CFG){
-    const el=document.getElementById('inp_'+m.id);if(el)el.value='';
-    const pb=document.getElementById('pb_'+m.id);if(pb){pb.textContent=`0/${m.max}`;pb.style.color='var(--muted)';}
-    const bar=document.getElementById('bar_'+m.id);if(bar)bar.style.width='0%';
-    const cpv=document.getElementById('cpv_'+m.id);if(cpv){cpv.textContent='0';cpv.style.color='var(--muted)';}
+  for (const m of METRIC_CFG) {
+    const el=document.getElementById('inp_'+m.id); if(el) el.value='';
+    const pb=document.getElementById('pb_'+m.id); if(pb){pb.textContent=`0 / ${m.max}`;pb.style.color='var(--muted)';}
+    const bar=document.getElementById('bar_'+m.id); if(bar) bar.style.width='0%';
+    const cpv=document.getElementById('cpv_'+m.id); if(cpv){cpv.textContent='0';cpv.style.color='var(--muted)';}
   }
   document.getElementById('rankNum').innerHTML='—<span class="rank-max" style="opacity:.35">/10</span>';
   document.getElementById('rankPts').innerHTML='<strong>—</strong> / 100 pts';
   document.getElementById('rankBadge').textContent='Enter your metrics to begin';
-  document.getElementById('pathResult').innerHTML='<div class="empty-state">Enter your metrics, then pick a target rank above.</div>';
+  document.getElementById('pathResult').innerHTML='<div class="empty-state">Enter your metrics, then pick a target rank.</div>';
 }
 
 // ═══════════════════════════════════════════════════════
-// TABS
+//  TABS
 // ═══════════════════════════════════════════════════════
 
-function showTab(name){
+function showTab(name) {
   const ids=['path','commission','whatif'];
   document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',ids[i]===name));
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
@@ -686,70 +713,123 @@ function showTab(name){
 }
 
 // ═══════════════════════════════════════════════════════
-// UPLOAD & OCR
+//  UPLOAD & OCR
 // ═══════════════════════════════════════════════════════
 
 const uploadZone=document.getElementById('uploadZone');
 const fileInput=document.getElementById('fileInput');
+const previewWrap=document.getElementById('previewWrap');
+const previewImg=document.getElementById('previewImg');
+const ocrBar=document.getElementById('ocrBar');
+const ocrFill=document.getElementById('ocrFill');
+const ocrStatus=document.getElementById('ocrStatus');
 
 uploadZone.addEventListener('dragover',e=>{e.preventDefault();uploadZone.classList.add('drag')});
 uploadZone.addEventListener('dragleave',()=>uploadZone.classList.remove('drag'));
 uploadZone.addEventListener('drop',e=>{e.preventDefault();uploadZone.classList.remove('drag');handleFile(e.dataTransfer.files[0])});
 fileInput.addEventListener('change',e=>handleFile(e.target.files[0]));
 
-function handleFile(file){
-  if(!file||!file.type.startsWith('image/'))return;
+function handleFile(file) {
+  if(!file||!file.type.startsWith('image/')) return;
   const reader=new FileReader();
   reader.onload=ev=>{
     uploadedImg=ev.target.result;
-    document.getElementById('previewImg').src=uploadedImg;
-    document.getElementById('previewWrap').style.display='block';
-    document.getElementById('ocrBar').style.display='none';
-    document.getElementById('ocrFound').innerHTML='';
-    fileInput.value='';
+    previewImg.src=uploadedImg;
+    previewWrap.style.display='block';
+    uploadZone.querySelector('input').value='';
   };
   reader.readAsDataURL(file);
 }
 
-function clearImage(){
+function clearImage() {
   uploadedImg=null;
-  document.getElementById('previewImg').src='';
-  document.getElementById('previewWrap').style.display='none';
-  document.getElementById('ocrBar').style.display='none';
-  document.getElementById('ocrFound').innerHTML='';
+  previewImg.src='';
+  previewWrap.style.display='none';
+  ocrBar.style.display='none';
   fileInput.value='';
 }
 
-// ── OCR parser — three-pass, handles both single-column and grid layouts ────
-//
-// The Prime portal shows metrics in a 4×2 grid of circles.
-// Tesseract often reads the grid as:
-//   "187% 221% 55% 110%"          ← all 4 % on one line
-//   "OPPS PPVGA FIBER AIA"        ← all 4 names on next line
-// Pass 1 handles this with positional column matching.
-// Pass 2 handles single-column format ("187%\nOPPS").
-// Pass 3 is a wider context fallback for anything still missing.
+// OCR keyword maps to field ids
+const OCR_KEYWORDS=[
+  {keys:['next up','nextup','next-up'],       id:'next_up'},
+  {keys:['rate plan','rateplan','rate %'],    id:'rate_plan'},
+  {keys:['protect'],                           id:'protection'},
+  {keys:['accessori','access'],               id:'accessories'},
+  {keys:['fiber','fibre','fib'],              id:'fiber'},
+  {keys:['aia','air'],                        id:'aia'},
+  {keys:['ppvga','pvga','premium voice','new voice'],id:'ppvga'},
+  {keys:['opps','opp'],                       id:'opps'},
+];
 
-function pctValid(val,isAttach){
-  if(isAttach)return val>=25&&val<100;
-  return val>=15&&val<=350;
+function matchMetric(line) {
+  const low=line.toLowerCase();
+  for (const {keys,id} of OCR_KEYWORDS)
+    if(keys.some(k=>low.includes(k))) return id;
+  return null;
 }
 
-function extractPcts(str){
-  return[...str.matchAll(/(\d{1,3}(?:\.\d+)?)\s*%/g)].map(m=>parseFloat(m[1]));
+// Convert "X of Y PTS" earned-points back to approximate % for pct-mode fields.
+function ptsEarnedToApproxPct(id, earned) {
+  const tbl=ATTACH_TBL[id];
+  if(tbl) {
+    for(const [thresh,pts] of tbl) if(Math.abs(earned-pts)<0.01) return thresh+1;
+    return earned>0?61:20;
+  }
+  const cfg=METRIC_CFG.find(m=>m.id===id);
+  if(!cfg) return 0;
+  for(let i=0;i<SALES_THR.length;i++){
+    const t=SALES_THR[i];
+    const p=Math.round(cfg.max*SALES_MUL[t]*100)/100;
+    if(Math.abs(earned-p)<0.01){
+      const next=SALES_THR[i-1]??t+10;
+      return Math.round((t+next)/2);
+    }
+  }
+  return 0;
 }
 
-function parseOcrText(text){
+function pctValid(v, isAttach) {
+  return isAttach ? (v>=25&&v<100) : (v>=15&&v<=350);
+}
+
+function extractPcts(str) {
+  return [...str.matchAll(/(\d{1,3}(?:\.\d+)?)\s*%/g)].map(m=>parseFloat(m[1]));
+}
+
+function parseOcrText(text) {
   const found={};
-  const lines=text.split(/\r?\n/).map(l=>l.trim()).filter(Boolean);
+  const lines=text.split('\n').map(l=>l.trim()).filter(Boolean);
 
-  // ── PASS 1: Grid positional matching ────────────────────────────────
-  // Find any line that contains 2+ metric keywords → that's a "name row" in the grid.
-  // The line(s) immediately above it contain the corresponding percentages in column order.
+  // ── PASS 1: "X of Y PTS" proximity (most reliable for portal circles) ──────
+  const PTS_RE=/(\d+(?:\.\d+)?)\s+of\s+(\d+(?:\.\d+)?)\s+(?:pts?|points?)/gi;
+  for(const{keys,id}of OCR_KEYWORDS){
+    if(id in found) continue;
+    const cfg=METRIC_CFG.find(m=>m.id===id);
+    if(!cfg) continue;
+    for(let i=0;i<lines.length;i++){
+      if(!keys.some(k=>lines[i].toLowerCase().includes(k))) continue;
+      const ctx=lines.slice(Math.max(0,i-3),i+4).join(' ');
+      let best=null;
+      const rx=new RegExp(PTS_RE.source,'gi');
+      let m2;
+      while((m2=rx.exec(ctx))!==null){
+        const earned=parseFloat(m2[1]);
+        const maxV=parseFloat(m2[2]);
+        if(maxV===cfg.max){best=earned;break;}
+        if(best===null)best=earned;
+      }
+      if(best!==null){
+        found[id+'_pts']=best;
+        if(!(id in found))
+          found[id]=inputMode==='pts'?best:ptsEarnedToApproxPct(id,best);
+        break;
+      }
+    }
+  }
+
+  // ── PASS 2: Grid positional (name row + preceding % row) ─────────────────
   for(let i=0;i<lines.length;i++){
     const lineLow=lines[i].toLowerCase();
-
-    // Find every metric keyword present on this line, sorted by position
     const hits=[];
     for(const{keys,id}of OCR_KEYWORDS){
       for(const key of keys){
@@ -757,160 +837,165 @@ function parseOcrText(text){
         if(idx!==-1){hits.push({id,pos:idx});break;}
       }
     }
-    if(hits.length<2)continue; // need 2+ names on same line for grid detection
+    if(hits.length<2) continue;
     hits.sort((a,b)=>a.pos-b.pos);
-
-    // Search up to 3 preceding lines for one that has the same number of %s
     for(let j=Math.max(0,i-3);j<i;j++){
       const pcts=extractPcts(lines[j]);
-      if(pcts.length!==hits.length)continue; // column count must match exactly
-
-      // Assign positionally: nth keyword gets nth percentage
+      if(pcts.length!==hits.length) continue;
       let assigned=0;
       for(let k=0;k<hits.length;k++){
         const{id}=hits[k];
+        if(id in found) continue;
         const val=pcts[k];
         const isAttach=METRIC_CFG.find(m=>m.id===id)?.attach;
-        if(!(id in found)&&pctValid(val,isAttach)){
-          found[id]=val;assigned++;
-        }
+        if(pctValid(val,isAttach)){found[id]=val;assigned++;}
       }
-      if(assigned>0)break;
+      if(assigned>0) break;
     }
   }
 
-  // ── PASS 2: Direct adjacency ("187%\nOPPS" or "OPPS 187%") ──────────
+  // ── PASS 3: Direct adjacency (1–2 surrounding lines) ─────────────────────
   for(const{keys,id}of OCR_KEYWORDS){
-    if(id in found)continue;
+    if(id in found) continue;
     const isAttach=METRIC_CFG.find(m=>m.id===id)?.attach;
-
     for(let i=0;i<lines.length;i++){
-      if(!keys.some(k=>lines[i].toLowerCase().includes(k)))continue;
-
-      // Check 1–2 lines immediately before the keyword line
+      if(!keys.some(k=>lines[i].toLowerCase().includes(k))) continue;
       for(let j=Math.max(0,i-2);j<i;j++){
         const pcts=extractPcts(lines[j]);
-        let chosen=null;
-        if(isAttach) chosen=pcts.find(v=>pctValid(v,true))??null;
-        else{const v=pcts.filter(v=>pctValid(v,false));if(v.length)chosen=Math.max(...v);}
-        if(chosen!==null){found[id]=chosen;break;}
+        let c=null;
+        if(isAttach) c=pcts.find(v=>pctValid(v,true))??null;
+        else{const v=pcts.filter(v=>pctValid(v,false));if(v.length)c=Math.max(...v);}
+        if(c!==null){found[id]=c;break;}
       }
-      if(id in found)break;
-
-      // Also check if % appears on the SAME line as keyword
-      const pcts=extractPcts(lines[i]);
-      let chosen=null;
-      if(isAttach) chosen=pcts.find(v=>pctValid(v,true))??null;
-      else{const v=pcts.filter(v=>pctValid(v,false));if(v.length)chosen=Math.max(...v);}
-      if(chosen!==null){found[id]=chosen;break;}
+      if(id in found) break;
+      const same=extractPcts(lines[i]);
+      let c=null;
+      if(isAttach) c=same.find(v=>pctValid(v,true))??null;
+      else{const v=same.filter(v=>pctValid(v,false));if(v.length)c=Math.max(...v);}
+      if(c!==null){found[id]=c;break;}
+      if(i+1<lines.length){
+        const nxt=extractPcts(lines[i+1]);
+        let c2=null;
+        if(isAttach) c2=nxt.find(v=>pctValid(v,true))??null;
+        else{const v=nxt.filter(v=>pctValid(v,false));if(v.length)c2=Math.max(...v);}
+        if(c2!==null){found[id]=c2;break;}
+      }
     }
   }
 
-  // ── PASS 3: Wider context fallback (±4 lines) ────────────────────────
+  // ── PASS 4: Narrow fallback (±2 lines only) ───────────────────────────────
   for(const{keys,id}of OCR_KEYWORDS){
-    if(id in found)continue;
+    if(id in found) continue;
     const isAttach=METRIC_CFG.find(m=>m.id===id)?.attach;
-
     for(let i=0;i<lines.length;i++){
-      if(!keys.some(k=>lines[i].toLowerCase().includes(k)))continue;
-      const ctx=lines.slice(Math.max(0,i-4),i+5).join(' ');
+      if(!keys.some(k=>lines[i].toLowerCase().includes(k))) continue;
+      const ctx=lines.slice(Math.max(0,i-2),i+3).join(' ');
       const pcts=extractPcts(ctx);
-      let chosen=null;
-      if(isAttach) chosen=pcts.find(v=>pctValid(v,true))??null;
-      else{const v=pcts.filter(v=>pctValid(v,false));if(v.length)chosen=Math.max(...v);}
-      if(chosen!==null){found[id]=chosen;break;}
+      let c=null;
+      if(isAttach) c=pcts.find(v=>pctValid(v,true))??null;
+      else{const v=pcts.filter(v=>pctValid(v,false));if(v.length)c=Math.max(...v);}
+      if(c!==null){found[id]=c;break;}
     }
   }
-
-  // Detect displayed Power Rank (e.g. "POWER RANK: 7.8")
-  const prM=text.match(/power\s*rank[:\s]+(\d+\.\d)/i);
-  if(prM)found._power_rank=parseFloat(prM[1]);
 
   return found;
 }
 
-function applyOcrResult(parsed){
+function applyOcrResult(parsed) {
   let count=0;
-  for(const[id,val]of Object.entries(parsed)){
-    if(id.startsWith('_'))continue;
-    const el=document.getElementById('inp_'+id);
-    if(el){el.value=val;state[id]=val;count++;}
+  for(const m of METRIC_CFG){
+    // In pts mode prefer _pts variant if available
+    const val=inputMode==='pts'&&(m.id+'_pts')in parsed
+      ?parsed[m.id+'_pts']
+      :parsed[m.id];
+    if(val===undefined) continue;
+    const el=document.getElementById('inp_'+m.id);
+    if(el){el.value=val;state[m.id]=val;count++;}
   }
   return count;
 }
 
-function showOcrChips(parsed){
-  const el=document.getElementById('ocrFound');
-  el.innerHTML='';
+function showOcrChips(parsed) {
+  const chips=document.getElementById('ocrFound');
+  if(!chips) return;
+  chips.innerHTML='';
   for(const m of METRIC_CFG){
+    const hit=m.id in parsed||(m.id+'_pts')in parsed;
     const chip=document.createElement('span');
-    chip.className='ocr-chip '+(m.id in parsed?'hit':'miss');
-    chip.textContent=m.id in parsed?`${m.label} ${parsed[m.id]}%`:`${m.label} ?`;
-    el.appendChild(chip);
+    chip.className='ocr-chip '+(hit?'hit':'miss');
+    const dispVal=inputMode==='pts'&&(m.id+'_pts')in parsed
+      ?`${parsed[m.id+'_pts']} pts`
+      :hit?`${parsed[m.id]}%`:null;
+    chip.textContent=hit?`${m.label} ${dispVal}`:`${m.label} ?`;
+    chips.appendChild(chip);
   }
 }
 
 let tesseractLoaded=false;
-function loadTesseract(cb){
+function loadTesseract(cb) {
   if(tesseractLoaded){cb();return;}
   const s=document.createElement('script');
   s.src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js';
   s.onload=()=>{tesseractLoaded=true;cb();};
-  s.onerror=()=>{document.getElementById('ocrStatus').textContent='Could not load OCR — enter numbers manually.';};
+  s.onerror=()=>{ ocrStatus.textContent='Could not load OCR library — enter numbers manually.'; };
   document.head.appendChild(s);
 }
 
-async function runOcr(){
+async function runOcr() {
   if(!uploadedImg){alert('Upload a screenshot first.');return;}
-  const ocrBar=document.getElementById('ocrBar');
-  const ocrFill=document.getElementById('ocrFill');
-  const ocrStatus=document.getElementById('ocrStatus');
   ocrBar.style.display='block';
   ocrFill.style.width='5%';
   ocrStatus.textContent='Loading OCR engine…';
-  document.getElementById('ocrFound').innerHTML='';
 
   loadTesseract(async()=>{
-    try{
+    try {
       ocrFill.style.width='15%';
       ocrStatus.textContent='Scanning image…';
+
       const worker=await Tesseract.createWorker('eng',1,{
         logger:m=>{
           if(m.status==='recognizing text'){
             ocrFill.style.width=Math.round(15+m.progress*75)+'%';
-            ocrStatus.textContent='Reading… '+Math.round(m.progress*100)+'%';
+            ocrStatus.textContent='Reading text… '+Math.round(m.progress*100)+'%';
           }
         }
       });
-      // PSM 6 = assume single uniform block; works better for the circle grid
-      await worker.setParameters({tessedit_pageseg_mode:'6'});
-      const{data:{text}}=await worker.recognize(uploadedImg);
+      // PSM 11 = sparse text, best for dashboard/circle-grid screenshots
+      await worker.setParameters({tessedit_pageseg_mode:'11'});
+
+      const {data:{text}}=await worker.recognize(uploadedImg);
       await worker.terminate();
+
       ocrFill.style.width='95%';
       ocrStatus.textContent='Parsing metrics…';
+
       const parsed=parseOcrText(text);
       const count=applyOcrResult(parsed);
-      ocrFill.style.width='100%';
       showOcrChips(parsed);
-      if(count>0){
-        ocrStatus.textContent=`Found ${count}/8 metrics — verify each field below`;
+
+      ocrFill.style.width='100%';
+      if(count===8){
+        ocrStatus.textContent='All 8 metrics found — verify values below then hit Calculate.';
+        updateUI();
+      } else if(count>0){
+        ocrStatus.textContent=`Found ${count}/8 metrics — verify below. Tip: try "Switch to Points Mode" for better scanning.`;
         updateUI();
       } else {
-        ocrStatus.textContent='⚠️ Could not read numbers — please type them in manually';
+        ocrStatus.textContent='⚠️ Could not read numbers — try "Switch to Points Mode" then scan again, or enter manually.';
       }
-    }catch(e){
-      document.getElementById('ocrStatus').textContent='OCR error — enter manually. ('+e.message+')';
+    } catch(e) {
+      ocrStatus.textContent='OCR failed — enter numbers manually. ('+e.message+')';
     }
   });
 }
 
 // ═══════════════════════════════════════════════════════
-// INIT
+//  INIT
 // ═══════════════════════════════════════════════════════
 
 buildMetricsForm();
-buildSalesForm();
 buildWhatIfForm();
+buildSalesForm();
 buildRankBtns();
 buildCatTable();
 </script>
