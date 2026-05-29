@@ -1,296 +1,258 @@
 "use strict";
 
-const fs = require("fs");
-
-const THRESHOLDS = [125, 100, 90, 80, 70, 60, 50, 40, 30, 20, 0];
+// ── Category max points ───────────────────────────────────────────────────────
 
 const METRIC_MAX_POINTS = {
-  opps_pct: 10,
-  ppvga_pct: 30,
-  internet_pct: 20,
-  accessories_pct: 10,
-  protection_pct: 5,
-  rate_plan_pct: 5,
-  next_up_pct: 5,
-  event_opps_pct: 5,
-  plus1_pct: 5,
-  csat_pct: 5,
+  opps:        15,
+  ppvga:       35,
+  fiber:       15,
+  aia:         10,
+  accessories: 10,
+  protection:   5,
+  rate_plan:    5,
+  next_up:      5,
 };
 
-const DEFAULT_MULTIPLIERS = {
-  125: 1.0,
-  100: 1.0,
-  90: 0.9,
-  80: 0.8,
-  70: 0.7,
-  60: 0.6,
-  50: 0.5,
-  40: 0.4,
-  30: 0.3,
-  20: 0.2,
-  0: 0.0,
+// ── Scoring tables ────────────────────────────────────────────────────────────
+
+// Sales-to-goal: 125 %+ = full points; every 10-pp tier below = −10 %.
+const SALES_MULTIPLIERS = {
+  125: 1.0, 100: 0.9, 90: 0.8, 80: 0.7,
+   70: 0.6,  60: 0.5, 50: 0.4, 40: 0.3,
+   30: 0.2,  20: 0.1,  0: 0.0,
+};
+const SALES_THRESHOLDS = Object.keys(SALES_MULTIPLIERS)
+  .map(Number)
+  .sort((a, b) => b - a);
+
+// Attach-rate exact breakpoint tables: [[minPct, points], ...]
+const PROTECTION_TABLE = [[70, 5.0],[68, 4.5],[66, 4.0],[63, 3.5],[60, 3.0]];
+const RATE_PLAN_TABLE  = [[82, 5.0],[80, 4.5],[78, 4.0],[76, 3.5],[74, 3.0]];
+const NEXT_UP_TABLE    = [[80, 5.0],[78, 4.5],[76, 4.0],[74, 3.5],[72, 3.0]];
+
+const ATTACH_TABLES = {
+  protection: PROTECTION_TABLE,
+  rate_plan:  RATE_PLAN_TABLE,
+  next_up:    NEXT_UP_TABLE,
 };
 
-const FIVE_POINT_MULTIPLIERS = {
-  125: 1.0,
-  100: 1.0,
-  90: 1.0,
-  80: 1.0,
-  70: 0.8,
-  60: 0.6,
-  50: 0.4,
-  40: 0.2,
-  30: 0.0,
-  20: 0.0,
-  0: 0.0,
+// ── Commission rates by rank tier ─────────────────────────────────────────────
+
+const COMMISSION_TIERS = {
+  rank_8: {
+    new_voice_premium:  35,
+    new_voice_extra:    25,
+    new_voice_starter:  15,
+    fiber_aia:          50,
+    voice_upgrade:       5,
+    accessories_pct:    0.06,
+    pa1:                 3,
+    pa4:                 6,
+    htp:                 6,
+  },
+  rank_9: {
+    new_voice_premium:  70,
+    new_voice_extra:    50,
+    new_voice_starter:  25,
+    fiber_aia:          60,
+    voice_upgrade:       5,
+    accessories_pct:    0.07,
+    pa1:                 4,
+    pa4:                10,
+    htp:                10,
+  },
 };
 
-const METRIC_RULES = {
-  protection_pct: { multipliers: FIVE_POINT_MULTIPLIERS, allowBelow50: false },
-  rate_plan_pct: { multipliers: FIVE_POINT_MULTIPLIERS, allowBelow50: false },
-  next_up_pct: { multipliers: FIVE_POINT_MULTIPLIERS, allowBelow50: false },
-  event_opps_pct: { multipliers: FIVE_POINT_MULTIPLIERS, allowBelow50: false },
-  plus1_pct: { multipliers: FIVE_POINT_MULTIPLIERS, allowBelow50: false },
-  csat_pct: { multipliers: FIVE_POINT_MULTIPLIERS, allowBelow50: false },
-};
+// ── Core scoring ──────────────────────────────────────────────────────────────
 
-function toFloat(value, fieldName, errors) {
-  if (value === undefined || value === null || value === "") {
-    errors.push(`Missing value for ${fieldName}.`);
-    return null;
-  }
-  const parsed = Number(value);
-  if (Number.isNaN(parsed)) {
-    errors.push(`Invalid number for ${fieldName}: ${JSON.stringify(value)}.`);
-    return null;
-  }
-  return parsed;
-}
+function percentToPoints(metric, percent) {
+  if (percent === null || percent === undefined) return 0;
 
-function parseCsv(filepath) {
-  const content = fs.readFileSync(filepath, "utf8");
-  const lines = content.split(/\r?\n/).filter((line) => line.trim() !== "");
-  if (lines.length === 0) {
-    return [];
-  }
-
-  const headers = lines[0].split(",").map((header) => header.trim());
-  const records = [];
-
-  for (let i = 1; i < lines.length; i += 1) {
-    const values = lines[i].split(",");
-    const row = {};
-    headers.forEach((header, index) => {
-      row[header] = values[index] !== undefined ? values[index].trim() : "";
-    });
-
-    const errors = [];
-    const dateValue = (row.date || "").trim();
-    if (!dateValue) {
-      errors.push("Missing date value.");
+  const table = ATTACH_TABLES[metric];
+  if (table) {
+    for (const [threshold, pts] of table) {
+      if (percent >= threshold) return pts;
     }
-
-    const data = {};
-    Object.keys(METRIC_MAX_POINTS).forEach((field) => {
-      data[field] = toFloat(row[field], field, errors);
-    });
-    data.htp_pct = toFloat(row.htp_pct, "htp_pct", errors);
-
-    records.push({ date: dateValue, data, errors });
-  }
-
-  return records;
-}
-
-function percentToPoints(metricName, percent) {
-  if (percent === null || percent === undefined) {
-    return 0;
-  }
-  const maxPoints = METRIC_MAX_POINTS[metricName];
-  if (maxPoints === undefined) {
-    throw new Error(`Unknown metric: ${metricName}`);
-  }
-
-  const rules = METRIC_RULES[metricName] || {};
-  const multipliers = rules.multipliers || DEFAULT_MULTIPLIERS;
-  const allowBelow50 = rules.allowBelow50 || false;
-
-  if (percent < 50 && !allowBelow50) {
     return 0;
   }
 
-  for (const threshold of THRESHOLDS) {
+  const maxPts = METRIC_MAX_POINTS[metric];
+  if (maxPts === undefined) throw new Error(`Unknown metric: ${metric}`);
+
+  for (const threshold of SALES_THRESHOLDS) {
     if (percent >= threshold) {
-      const multiplier = Number(multipliers[threshold] || 0);
-      return Math.round(maxPoints * multiplier * 100) / 100;
+      return Math.round(maxPts * SALES_MULTIPLIERS[threshold] * 100) / 100;
     }
   }
-
   return 0;
 }
 
-function computePoints(record) {
-  const points = {};
-  Object.keys(METRIC_MAX_POINTS).forEach((metric) => {
-    const pointsKey = metric.replace("_pct", "_points");
-    points[pointsKey] = percentToPoints(metric, record.data[metric]);
-  });
-
-  if (record.data.htp_pct !== null && record.data.htp_pct < 6.5) {
-    points.protection_points = Math.round((points.protection_points || 0) / 2 * 100) / 100;
+function computePoints(metrics) {
+  const out = {};
+  for (const m of Object.keys(METRIC_MAX_POINTS)) {
+    if (m in metrics) out[m] = percentToPoints(m, metrics[m]);
   }
-
-  return points;
+  return out;
 }
 
-function computePowerRank(pointsDict) {
-  const totalPoints = Math.round(Object.values(pointsDict).reduce((sum, value) => sum + value, 0) * 100) / 100;
-  const powerRank = Math.round((totalPoints / 100) * 10 * 100) / 100;
-  return { totalPoints, powerRank };
+function computePowerRank(points) {
+  const total     = Math.round(Object.values(points).reduce((s, v) => s + v, 0) * 100) / 100;
+  const powerRank = Math.round(total / 10 * 100) / 100;
+  return { total, powerRank };
 }
 
-function neededToTarget(currentValue, goal, dayOfMonth, daysInMonth, targetPct) {
-  if (daysInMonth <= 0) {
-    throw new Error("daysInMonth must be greater than zero.");
+// ── What-if simulator ─────────────────────────────────────────────────────────
+
+function simulateWhatIf(metrics, changes) {
+  const beforePts              = computePoints(metrics);
+  const { total: bTotal, powerRank: bRank } = computePowerRank(beforePts);
+
+  const updated                = { ...metrics, ...changes };
+  const afterPts               = computePoints(updated);
+  const { total: aTotal, powerRank: aRank } = computePowerRank(afterPts);
+
+  const deltas = {};
+  for (const m of Object.keys(METRIC_MAX_POINTS)) {
+    deltas[m] = Math.round(((afterPts[m] || 0) - (beforePts[m] || 0)) * 100) / 100;
   }
-  const dailyTarget = goal / daysInMonth;
-  const neededByToday = dailyTarget * dayOfMonth * (targetPct / 100);
-  return Math.max(0, Math.ceil(neededByToday - currentValue));
+
+  return {
+    before_rank:    bRank,
+    after_rank:     aRank,
+    rank_delta:     Math.round((aRank - bRank) * 100) / 100,
+    before_points:  bTotal,
+    after_points:   aTotal,
+    points_delta:   Math.round((aTotal - bTotal) * 100) / 100,
+    category_deltas: deltas,
+  };
 }
 
-function generateReport(record, points, powerRank) {
-  const totalPoints = Math.round(Object.values(points).reduce((sum, value) => sum + value, 0) * 100) / 100;
-  const lines = [
-    `Date: ${record.date}`,
-    "Metric Summary:",
-  ];
+// ── Path to target rank ───────────────────────────────────────────────────────
 
-  Object.keys(METRIC_MAX_POINTS).forEach((metric) => {
-    const percentValue = record.data[metric];
-    const pointsKey = metric.replace("_pct", "_points");
-    const pointsValue = points[pointsKey] || 0;
-    const percentDisplay = percentValue === null || percentValue === undefined
-      ? "n/a"
-      : `${percentValue.toFixed(2)}%`;
-    lines.push(`- ${metric}: ${percentDisplay} -> ${pointsValue.toFixed(2)} pts`);
-  });
+function pathToRank(metrics, targetRank) {
+  const curPts                 = computePoints(metrics);
+  const { total: curTotal, powerRank: curRk } = computePowerRank(curPts);
+  const targetTotal            = Math.round(targetRank * 10 * 100) / 100;
+  const needed                 = Math.max(0, Math.round((targetTotal - curTotal) * 100) / 100);
 
-  if (record.errors && record.errors.length > 0) {
-    lines.push("Errors:");
-    record.errors.forEach((error) => lines.push(`- ${error}`));
+  const candidates = [];
+  for (const metric of Object.keys(METRIC_MAX_POINTS)) {
+    const curPct  = metrics[metric] || 0;
+    const curPt   = percentToPoints(metric, curPct);
+    const maxPt   = percentToPoints(metric, 125);
+    const gain    = Math.round((maxPt - curPt) * 100) / 100;
+    if (gain > 0) candidates.push({ metric, current_pct: curPct, current_pts: curPt, max_gain: gain });
+  }
+  candidates.sort((a, b) => b.max_gain - a.max_gain);
+
+  const actions = [];
+  let projected = curTotal;
+  for (const c of candidates) {
+    if (projected >= targetTotal) break;
+    actions.push({ metric: c.metric, current_pct: c.current_pct, points_added: c.max_gain });
+    projected = Math.round((projected + c.max_gain) * 100) / 100;
   }
 
-  lines.push(`Total Points: ${totalPoints.toFixed(2)}`);
-  lines.push(`Power Rank: ${powerRank.toFixed(2)}`);
+  return {
+    current_rank:        curRk,
+    current_points:      curTotal,
+    target_rank:         targetRank,
+    target_points:       targetTotal,
+    needed_points:       needed,
+    recommended_actions: actions,
+    projected_points:    projected,
+    projected_rank:      Math.round(projected / 10 * 100) / 100,
+  };
+}
 
+// ── Commission projection ─────────────────────────────────────────────────────
+
+function commissionTierKey(rank) {
+  return rank >= 9.0 ? "rank_9" : "rank_8";
+}
+
+function projectCommission(rank, sales) {
+  function calc(tierKey) {
+    const r = COMMISSION_TIERS[tierKey];
+    return Math.round((
+      (sales.new_voice_premium    || 0) * r.new_voice_premium
+    + (sales.new_voice_extra      || 0) * r.new_voice_extra
+    + (sales.new_voice_starter    || 0) * r.new_voice_starter
+    + (sales.fiber_aia            || 0) * r.fiber_aia
+    + (sales.voice_upgrade        || 0) * r.voice_upgrade
+    + (sales.accessories_revenue  || 0) * r.accessories_pct
+    + (sales.pa1                  || 0) * r.pa1
+    + (sales.pa4                  || 0) * r.pa4
+    + (sales.htp                  || 0) * r.htp
+    ) * 100) / 100;
+  }
+
+  const currentTier = commissionTierKey(rank);
+  const currentPay  = calc(currentTier);
+  const rank9Pay    = calc("rank_9");
+
+  return {
+    current_rank:       rank,
+    current_tier:       currentTier,
+    current_commission: currentPay,
+    rank9_commission:   rank9Pay,
+    rank9_uplift:       Math.round((rank9Pay - currentPay) * 100) / 100,
+  };
+}
+
+// ── Report helper ─────────────────────────────────────────────────────────────
+
+function generateReport(metrics) {
+  const pts                   = computePoints(metrics);
+  const { total, powerRank }  = computePowerRank(pts);
+  const lines = ["Power Rank Report", "=".repeat(42)];
+  for (const [m, maxP] of Object.entries(METRIC_MAX_POINTS)) {
+    const pct = (metrics[m] || 0).toFixed(1);
+    const p   = (pts[m]     || 0).toFixed(2);
+    lines.push(`  ${m.padEnd(14)} ${String(pct).padStart(6)}%  →  ${String(p).padStart(5)} / ${maxP} pts`);
+  }
+  lines.push("-".repeat(42));
+  lines.push(`  Total Points:   ${total.toFixed(2)}`);
+  lines.push(`  Power Rank:     ${powerRank.toFixed(2)}`);
   return lines.join("\n");
 }
 
-function calculateNeededByDate(goals, current, dayOfMonth, daysInMonth, targetRank) {
-  const currentRecord = { data: { ...current }, date: "", errors: [] };
-  const currentPoints = computePoints(currentRecord);
-  const { totalPoints: currentTotal } = computePowerRank(currentPoints);
-
-  const targetPoints = (targetRank / 10) * 100;
-  const shortfall = Math.max(0, Math.round((targetPoints - currentTotal) * 100) / 100);
-
-  const recommendations = [];
-
-  Object.keys(METRIC_MAX_POINTS).forEach((metric) => {
-    const currentValue = current[metric] || 0;
-    const goalValue = goals[metric];
-    if (goalValue === undefined) {
-      return;
-    }
-
-    const currentPercent = goalValue ? (currentValue / goalValue) * 100 : 0;
-    const currentMetricPoints = percentToPoints(metric, currentPercent);
-
-    const rules = METRIC_RULES[metric] || {};
-    const allowBelow50 = rules.allowBelow50 || false;
-
-    let nextThreshold = null;
-    for (const threshold of THRESHOLDS) {
-      if (threshold <= currentPercent) {
-        continue;
-      }
-      if (threshold < 50 && !allowBelow50) {
-        continue;
-      }
-      nextThreshold = threshold;
-      break;
-    }
-
-    if (nextThreshold === null) {
-      return;
-    }
-
-    const nextPoints = percentToPoints(metric, nextThreshold);
-    const pointGain = Math.round(Math.max(0, nextPoints - currentMetricPoints) * 100) / 100;
-    if (pointGain <= 0) {
-      return;
-    }
-
-    const requiredMore = neededToTarget(
-      currentValue,
-      goalValue,
-      dayOfMonth,
-      daysInMonth,
-      nextThreshold
-    );
-
-    recommendations.push({
-      metric,
-      current_percent: Math.round(currentPercent * 100) / 100,
-      next_threshold: nextThreshold,
-      point_gain: pointGain,
-      needed_more_by_today: requiredMore,
-    });
-  });
-
-  recommendations.sort((a, b) => b.point_gain - a.point_gain);
-
-  return {
-    target_rank: targetRank,
-    target_points: Math.round(targetPoints * 100) / 100,
-    current_points: currentTotal,
-    shortfall_points: shortfall,
-    recommendations,
-  };
-}
+// ── CLI example ───────────────────────────────────────────────────────────────
 
 if (require.main === module) {
-  const sampleRecord = {
-    date: "2026-02-14",
-    data: {
-      opps_pct: 61,
-      ppvga_pct: 35,
-      internet_pct: 36,
-      accessories_pct: 70,
-      protection_pct: 83,
-      rate_plan_pct: 100,
-      next_up_pct: 82,
-      event_opps_pct: 40,
-      plus1_pct: 38,
-      csat_pct: 75,
-      htp_pct: 5.1,
-    },
-    errors: [],
+  const snapshot = {
+    opps: 201, ppvga: 237, fiber: 62, aia: 124,
+    accessories: 151, protection: 46, rate_plan: 59, next_up: 76,
   };
 
-  const points = computePoints(sampleRecord);
-  const { totalPoints, powerRank } = computePowerRank(points);
-  points.total_points = totalPoints;
-  points.power_rank = powerRank;
-  console.log(JSON.stringify(points, null, 2));
+  console.log(generateReport(snapshot));
+  console.log("\nPath to 9.0:");
+  console.log(JSON.stringify(pathToRank(snapshot, 9.0), null, 2));
+
+  console.log("\nWhat-if: fiber → 85 %:");
+  console.log(JSON.stringify(simulateWhatIf(snapshot, { fiber: 85 }), null, 2));
+
+  const sampleSales = {
+    new_voice_premium: 8, new_voice_extra: 4, new_voice_starter: 2,
+    fiber_aia: 3, voice_upgrade: 5, accessories_revenue: 350,
+    pa1: 6, pa4: 3, htp: 2,
+  };
+  console.log("\nCommission projection:");
+  console.log(JSON.stringify(projectCommission(8.0, sampleSales), null, 2));
 }
 
 module.exports = {
-  parseCsv,
+  METRIC_MAX_POINTS,
+  COMMISSION_TIERS,
+  PROTECTION_TABLE,
+  RATE_PLAN_TABLE,
+  NEXT_UP_TABLE,
   percentToPoints,
   computePoints,
   computePowerRank,
-  neededToTarget,
+  simulateWhatIf,
+  pathToRank,
+  commissionTierKey,
+  projectCommission,
   generateReport,
-  calculateNeededByDate,
 };

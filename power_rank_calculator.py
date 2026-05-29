@@ -1,316 +1,287 @@
-"""Power Rank Calculator for Prime Communications.
-
-This module parses CSV input, scores metrics using tiered thresholds,
-applies business rules, and generates summary reports.
-"""
+"""Power Rank Calculator for Prime Communications."""
 
 from __future__ import annotations
 
-import csv
+import json
 import math
-from dataclasses import dataclass
-from typing import Dict, Iterable, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
-
-THRESHOLDS: List[float] = [125, 100, 90, 80, 70, 60, 50, 40, 30, 20, 0]
+# ── Category max points ───────────────────────────────────────────────────────
 
 METRIC_MAX_POINTS: Dict[str, float] = {
-    "opps_pct": 10,
-    "ppvga_pct": 30,
-    "internet_pct": 20,
-    "accessories_pct": 10,
-    "protection_pct": 5,
-    "rate_plan_pct": 5,
-    "next_up_pct": 5,
-    "event_opps_pct": 5,
-    "plus1_pct": 5,
-    "csat_pct": 5,
+    "opps":        15,
+    "ppvga":       35,
+    "fiber":       15,
+    "aia":         10,
+    "accessories": 10,
+    "protection":   5,
+    "rate_plan":    5,
+    "next_up":      5,
 }
 
-# Multipliers by threshold for most metrics (50% and up).
-DEFAULT_MULTIPLIERS: Dict[float, float] = {
-    125: 1.0,
-    100: 1.0,
-    90: 0.9,
-    80: 0.8,
-    70: 0.7,
-    60: 0.6,
-    50: 0.5,
-    40: 0.4,
-    30: 0.3,
-    20: 0.2,
-    0: 0.0,
+# ── Scoring tables ────────────────────────────────────────────────────────────
+
+# Sales-to-goal categories: 125 %+ earns full points, each 10-pp tier is -10 %.
+SALES_MULTIPLIERS: Dict[float, float] = {
+    125: 1.0, 100: 0.9, 90: 0.8, 80: 0.7,
+     70: 0.6,  60: 0.5, 50: 0.4, 40: 0.3,
+     30: 0.2,  20: 0.1,  0: 0.0,
+}
+_SALES_THRESHOLDS: List[float] = sorted(SALES_MULTIPLIERS, reverse=True)
+
+# Attach-rate categories use exact percentage breakpoints.
+PROTECTION_TABLE: List[Tuple[float, float]] = [
+    (70, 5.0), (68, 4.5), (66, 4.0), (63, 3.5), (60, 3.0),
+]
+
+RATE_PLAN_TABLE: List[Tuple[float, float]] = [
+    (82, 5.0), (80, 4.5), (78, 4.0), (76, 3.5), (74, 3.0),
+]
+
+NEXT_UP_TABLE: List[Tuple[float, float]] = [
+    (80, 5.0), (78, 4.5), (76, 4.0), (74, 3.5), (72, 3.0),
+]
+
+_ATTACH_TABLES: Dict[str, List[Tuple[float, float]]] = {
+    "protection": PROTECTION_TABLE,
+    "rate_plan":  RATE_PLAN_TABLE,
+    "next_up":    NEXT_UP_TABLE,
 }
 
-# Tweaked multipliers for 5-point metrics so 80%+ can earn full points.
-FIVE_POINT_MULTIPLIERS: Dict[float, float] = {
-    125: 1.0,
-    100: 1.0,
-    90: 1.0,
-    80: 1.0,
-    70: 0.8,
-    60: 0.6,
-    50: 0.4,
-    40: 0.2,
-    30: 0.0,
-    20: 0.0,
-    0: 0.0,
+# ── Commission rates by rank tier ─────────────────────────────────────────────
+
+COMMISSION_TIERS: Dict[str, Dict[str, float]] = {
+    "rank_8": {
+        "new_voice_premium":  35,
+        "new_voice_extra":    25,
+        "new_voice_starter":  15,
+        "fiber_aia":          50,
+        "voice_upgrade":       5,
+        "accessories_pct":    0.06,
+        "pa1":                 3,
+        "pa4":                 6,
+        "htp":                 6,
+    },
+    "rank_9": {
+        "new_voice_premium":  70,
+        "new_voice_extra":    50,
+        "new_voice_starter":  25,
+        "fiber_aia":          60,
+        "voice_upgrade":       5,
+        "accessories_pct":    0.07,
+        "pa1":                 4,
+        "pa4":                10,
+        "htp":                10,
+    },
 }
 
-# Set allow_below_50 to True for metrics that should score below 50%.
-METRIC_RULES: Dict[str, Dict[str, object]] = {
-    "protection_pct": {"multipliers": FIVE_POINT_MULTIPLIERS, "allow_below_50": False},
-    "rate_plan_pct": {"multipliers": FIVE_POINT_MULTIPLIERS, "allow_below_50": False},
-    "next_up_pct": {"multipliers": FIVE_POINT_MULTIPLIERS, "allow_below_50": False},
-    "event_opps_pct": {"multipliers": FIVE_POINT_MULTIPLIERS, "allow_below_50": False},
-    "plus1_pct": {"multipliers": FIVE_POINT_MULTIPLIERS, "allow_below_50": False},
-    "csat_pct": {"multipliers": FIVE_POINT_MULTIPLIERS, "allow_below_50": False},
-}
+# ── Core scoring ──────────────────────────────────────────────────────────────
 
-
-@dataclass
-class Record:
-    """Represents a single CSV record with optional parsing errors."""
-
-    data: Dict[str, Optional[float]]
-    date: str
-    errors: List[str]
-
-
-def _to_float(value: str, field_name: str, errors: List[str]) -> Optional[float]:
-    """Convert a string to float, recording an error if conversion fails."""
-
-    if value is None or value == "":
-        errors.append(f"Missing value for {field_name}.")
-        return None
-    try:
-        return float(value)
-    except ValueError:
-        errors.append(f"Invalid number for {field_name}: {value!r}.")
-        return None
-
-
-def parse_csv(filepath: str) -> List[Record]:
-    """Load CSV and return a list of parsed records."""
-
-    records: List[Record] = []
-    with open(filepath, newline="", encoding="utf-8") as handle:
-        reader = csv.DictReader(handle)
-        for row in reader:
-            errors: List[str] = []
-            date_value = (row.get("date") or "").strip()
-            if not date_value:
-                errors.append("Missing date value.")
-                date_value = ""
-
-            data: Dict[str, Optional[float]] = {}
-            for field in METRIC_MAX_POINTS:
-                data[field] = _to_float(row.get(field, ""), field, errors)
-            data["htp_pct"] = _to_float(row.get("htp_pct", ""), "htp_pct", errors)
-
-            records.append(Record(data=data, date=date_value, errors=errors))
-
-    return records
-
-
-def percent_to_points(metric_name: str, percent: Optional[float]) -> float:
-    """Convert a percent value to points using tiered thresholds."""
-
+def percent_to_points(metric: str, percent: float) -> float:
+    """Return points earned for a metric at a given percent-to-goal or attach rate."""
     if percent is None:
         return 0.0
 
-    max_points = METRIC_MAX_POINTS.get(metric_name)
-    if max_points is None:
-        raise KeyError(f"Unknown metric: {metric_name}")
-
-    rules = METRIC_RULES.get(metric_name, {})
-    multipliers = rules.get("multipliers", DEFAULT_MULTIPLIERS)
-    allow_below_50 = rules.get("allow_below_50", False)
-
-    if percent < 50 and not allow_below_50:
+    table = _ATTACH_TABLES.get(metric)
+    if table is not None:
+        for threshold, pts in table:
+            if percent >= threshold:
+                return pts
         return 0.0
 
-    for threshold in THRESHOLDS:
-        if percent >= threshold:
-            multiplier = float(multipliers.get(threshold, 0.0))
-            return round(max_points * multiplier, 2)
+    max_pts = METRIC_MAX_POINTS.get(metric)
+    if max_pts is None:
+        raise KeyError(f"Unknown metric: {metric!r}")
 
+    for threshold in _SALES_THRESHOLDS:
+        if percent >= threshold:
+            return round(max_pts * SALES_MULTIPLIERS[threshold], 2)
     return 0.0
 
 
-def compute_points(record: Record) -> Dict[str, float]:
-    """Compute points for each metric, applying the HTP rule."""
-
-    points: Dict[str, float] = {}
-    for metric in METRIC_MAX_POINTS:
-        points_key = metric.replace("_pct", "_points")
-        points[points_key] = percent_to_points(metric, record.data.get(metric))
-
-    htp_value = record.data.get("htp_pct")
-    if htp_value is not None and htp_value < 6.5:
-        points["protection_points"] = round(points.get("protection_points", 0.0) / 2, 2)
-
-    return points
+def compute_points(metrics: Dict[str, float]) -> Dict[str, float]:
+    """Return {metric: points} for every recognised metric in *metrics*."""
+    return {m: percent_to_points(m, v) for m, v in metrics.items() if m in METRIC_MAX_POINTS}
 
 
-def compute_power_rank(points_dict: Dict[str, float]) -> Tuple[float, float]:
-    """Return total points and the Power Rank value."""
-
-    total_points = round(sum(points_dict.values()), 2)
-    power_rank = round((total_points / 100.0) * 10, 2)
-    return total_points, power_rank
-
-
-def needed_to_target(
-    current_value: float,
-    goal: float,
-    day_of_month: int,
-    days_in_month: int,
-    target_pct: float,
-) -> int:
-    """Return how much more is needed by today to reach a target percent."""
-
-    if days_in_month <= 0:
-        raise ValueError("days_in_month must be greater than zero.")
-
-    daily_target = goal / days_in_month
-    needed_by_today = daily_target * day_of_month * (target_pct / 100.0)
-    required_more = max(0, math.ceil(needed_by_today - current_value))
-    return required_more
+def compute_power_rank(points: Dict[str, float]) -> Tuple[float, float]:
+    """Return (total_points, power_rank)."""
+    total = round(sum(points.values()), 2)
+    rank  = round(total / 10, 2)
+    return total, rank
 
 
-def generate_report(record: Record, points: Dict[str, float], power_rank: float) -> str:
-    """Return a formatted summary report for a single record."""
+# ── What-if simulator ─────────────────────────────────────────────────────────
 
-    total_points = round(sum(points.values()), 2)
-    lines: List[str] = [
-        f"Date: {record.date}",
-        "Metric Summary:",
-    ]
-
-    for metric in METRIC_MAX_POINTS:
-        percent_value = record.data.get(metric)
-        points_key = metric.replace("_pct", "_points")
-        points_value = points.get(points_key, 0.0)
-        percent_display = "n/a" if percent_value is None else f"{percent_value:.2f}%"
-        lines.append(f"- {metric}: {percent_display} -> {points_value:.2f} pts")
-
-    if record.errors:
-        lines.append("Errors:")
-        lines.extend([f"- {error}" for error in record.errors])
-
-    lines.extend(
-        [
-            f"Total Points: {total_points:.2f}",
-            f"Power Rank: {power_rank:.2f}",
-        ]
-    )
-
-    return "\n".join(lines)
-
-
-def calculate_needed_by_date(
-    goals: Dict[str, float],
-    current: Dict[str, float],
-    day_of_month: int,
-    days_in_month: int,
-    target_rank: float,
+def simulate_what_if(
+    metrics: Dict[str, float],
+    changes: Dict[str, float],
 ) -> Dict[str, object]:
-    """Estimate metric targets by today to reach an overall Power Rank.
+    """Apply hypothetical metric changes and return the rank impact.
 
-    This uses the next threshold level per metric and prioritizes metrics
-    with the largest point gap.
+    *changes* maps metric name → new percent value.
     """
+    before_pts              = compute_points(metrics)
+    before_total, before_rk = compute_power_rank(before_pts)
 
-    current_record = Record(data={**current}, date="", errors=[])
-    current_points = compute_points(current_record)
-    current_total, _ = compute_power_rank(current_points)
-
-    target_points = (target_rank / 10.0) * 100.0
-    shortfall = max(0.0, round(target_points - current_total, 2))
-
-    recommendations: List[Dict[str, object]] = []
-
-    for metric, max_points in METRIC_MAX_POINTS.items():
-        current_value = current.get(metric, 0.0)
-        goal_value = goals.get(metric)
-        if goal_value is None:
-            continue
-
-        current_percent = (current_value / goal_value) * 100 if goal_value else 0.0
-        current_metric_points = percent_to_points(metric, current_percent)
-
-        rules = METRIC_RULES.get(metric, {})
-        allow_below_50 = rules.get("allow_below_50", False)
-
-        next_threshold = None
-        for threshold in THRESHOLDS:
-            if threshold <= current_percent:
-                continue
-            if threshold < 50 and not allow_below_50:
-                continue
-            next_threshold = threshold
-            break
-
-        if next_threshold is None:
-            continue
-
-        next_points = percent_to_points(metric, next_threshold)
-        point_gain = round(max(0.0, next_points - current_metric_points), 2)
-        if point_gain <= 0:
-            continue
-
-        required_more = needed_to_target(
-            current_value=current_value,
-            goal=goal_value,
-            day_of_month=day_of_month,
-            days_in_month=days_in_month,
-            target_pct=next_threshold,
-        )
-
-        recommendations.append(
-            {
-                "metric": metric,
-                "current_percent": round(current_percent, 2),
-                "next_threshold": next_threshold,
-                "point_gain": point_gain,
-                "needed_more_by_today": required_more,
-            }
-        )
-
-    recommendations.sort(key=lambda item: item["point_gain"], reverse=True)
+    updated                 = {**metrics, **changes}
+    after_pts               = compute_points(updated)
+    after_total, after_rk   = compute_power_rank(after_pts)
 
     return {
-        "target_rank": target_rank,
-        "target_points": round(target_points, 2),
-        "current_points": current_total,
-        "shortfall_points": shortfall,
-        "recommendations": recommendations,
+        "before_rank":    before_rk,
+        "after_rank":     after_rk,
+        "rank_delta":     round(after_rk - before_rk, 2),
+        "before_points":  before_total,
+        "after_points":   after_total,
+        "points_delta":   round(after_total - before_total, 2),
+        "category_deltas": {
+            m: round(after_pts.get(m, 0) - before_pts.get(m, 0), 2)
+            for m in METRIC_MAX_POINTS
+        },
     }
 
 
-if __name__ == "__main__":
-    # Example usage with a single CSV row provided in the prompt.
-    sample = Record(
-        data={
-            "opps_pct": 61,
-            "ppvga_pct": 35,
-            "internet_pct": 36,
-            "accessories_pct": 70,
-            "protection_pct": 83,
-            "rate_plan_pct": 100,
-            "next_up_pct": 82,
-            "event_opps_pct": 40,
-            "plus1_pct": 38,
-            "csat_pct": 75,
-            "htp_pct": 5.1,
-        },
-        date="2026-02-14",
-        errors=[],
-    )
+# ── Path to target rank ───────────────────────────────────────────────────────
 
-    sample_points = compute_points(sample)
-    total_points, rank = compute_power_rank(sample_points)
-    sample_points["total_points"] = total_points
-    sample_points["power_rank"] = rank
-    print(sample_points)
+def path_to_rank(
+    metrics: Dict[str, float],
+    target_rank: float,
+) -> Dict[str, object]:
+    """Return the greedy list of metric improvements needed to reach *target_rank*."""
+    current_pts            = compute_points(metrics)
+    current_total, cur_rk  = compute_power_rank(current_pts)
+    target_total           = round(target_rank * 10, 2)
+    needed                 = max(0.0, round(target_total - current_total, 2))
+
+    # Maximum gain possible per metric (push to 125 %)
+    candidates = []
+    for metric in METRIC_MAX_POINTS:
+        cur_pct  = metrics.get(metric, 0.0)
+        cur_pts  = percent_to_points(metric, cur_pct)
+        max_pts  = percent_to_points(metric, 125)
+        gain     = round(max_pts - cur_pts, 2)
+        if gain > 0:
+            candidates.append({"metric": metric, "current_pct": cur_pct,
+                                "current_pts": cur_pts, "max_gain": gain})
+
+    candidates.sort(key=lambda x: x["max_gain"], reverse=True)
+
+    actions   = []
+    projected = current_total
+    for c in candidates:
+        if projected >= target_total:
+            break
+        actions.append({
+            "metric":       c["metric"],
+            "current_pct":  c["current_pct"],
+            "points_added": c["max_gain"],
+        })
+        projected = round(projected + c["max_gain"], 2)
+
+    return {
+        "current_rank":        cur_rk,
+        "current_points":      current_total,
+        "target_rank":         target_rank,
+        "target_points":       target_total,
+        "needed_points":       needed,
+        "recommended_actions": actions,
+        "projected_points":    projected,
+        "projected_rank":      round(projected / 10, 2),
+    }
+
+
+# ── Commission projection ─────────────────────────────────────────────────────
+
+def commission_tier_key(rank: float) -> str:
+    return "rank_9" if rank >= 9.0 else "rank_8"
+
+
+def project_commission(
+    rank: float,
+    sales: Dict[str, float],
+) -> Dict[str, object]:
+    """Estimate payout at current rank and at rank 9 for the same sales mix.
+
+    Expected *sales* keys:
+        new_voice_premium, new_voice_extra, new_voice_starter,
+        fiber_aia, voice_upgrade, accessories_revenue, pa1, pa4, htp
+    """
+    def _calc(tier_key: str) -> float:
+        r = COMMISSION_TIERS[tier_key]
+        return round(
+            sales.get("new_voice_premium",    0) * r["new_voice_premium"]
+            + sales.get("new_voice_extra",    0) * r["new_voice_extra"]
+            + sales.get("new_voice_starter",  0) * r["new_voice_starter"]
+            + sales.get("fiber_aia",          0) * r["fiber_aia"]
+            + sales.get("voice_upgrade",      0) * r["voice_upgrade"]
+            + sales.get("accessories_revenue",0) * r["accessories_pct"]
+            + sales.get("pa1",                0) * r["pa1"]
+            + sales.get("pa4",                0) * r["pa4"]
+            + sales.get("htp",                0) * r["htp"],
+            2,
+        )
+
+    current_tier = commission_tier_key(rank)
+    current_pay  = _calc(current_tier)
+    rank9_pay    = _calc("rank_9")
+
+    return {
+        "current_rank":       rank,
+        "current_tier":       current_tier,
+        "current_commission": current_pay,
+        "rank9_commission":   rank9_pay,
+        "rank9_uplift":       round(rank9_pay - current_pay, 2),
+    }
+
+
+# ── Report helper ─────────────────────────────────────────────────────────────
+
+def generate_report(metrics: Dict[str, float]) -> str:
+    pts          = compute_points(metrics)
+    total, rank  = compute_power_rank(pts)
+    lines        = ["Power Rank Report", "=" * 42]
+    for m, max_p in METRIC_MAX_POINTS.items():
+        pct = metrics.get(m, 0.0)
+        p   = pts.get(m, 0.0)
+        lines.append(f"  {m:<14} {pct:>6.1f}%  →  {p:>5.2f} / {max_p:.0f} pts")
+    lines += [
+        "-" * 42,
+        f"  Total Points:   {total:.2f}",
+        f"  Power Rank:     {rank:.2f}",
+    ]
+    return "\n".join(lines)
+
+
+# ── Example ───────────────────────────────────────────────────────────────────
+
+if __name__ == "__main__":
+    snapshot = {
+        "opps":        201,
+        "ppvga":       237,
+        "fiber":        62,
+        "aia":         124,
+        "accessories": 151,
+        "protection":   46,
+        "rate_plan":    59,
+        "next_up":      76,
+    }
+
+    print(generate_report(snapshot))
+    print()
+    print("Path to 9.0:")
+    print(json.dumps(path_to_rank(snapshot, 9.0), indent=2))
+    print()
+
+    # What if +1 fiber moves you from 62 % → ~85 %?
+    print("What-if: fiber → 85 %:")
+    print(json.dumps(simulate_what_if(snapshot, {"fiber": 85}), indent=2))
+    print()
+
+    sample_sales = {
+        "new_voice_premium": 8, "new_voice_extra": 4, "new_voice_starter": 2,
+        "fiber_aia": 3, "voice_upgrade": 5, "accessories_revenue": 350,
+        "pa1": 6, "pa4": 3, "htp": 2,
+    }
+    print("Commission projection:")
+    print(json.dumps(project_commission(8.0, sample_sales), indent=2))

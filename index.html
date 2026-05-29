@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Power Rank Calculator</title>
+<style>
+  :root {
+    --bg:        #0f1117;
+    --card:      #1a1d27;
+    --border:    #2a2d3a;
+    --accent:    #6c63ff;
+    --accent2:   #00d4aa;
+    --warn:      #ff6b6b;
+    --text:      #e2e8f0;
+    --muted:     #8892a4;
+    --green:     #48bb78;
+    --yellow:    #ecc94b;
+    --red:       #fc8181;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg); color: var(--text);
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    font-size: 15px; line-height: 1.5;
+    padding: 20px;
+  }
+  h1 { font-size: 1.6rem; font-weight: 700; color: var(--accent); margin-bottom: 4px; }
+  h2 { font-size: 1.1rem; font-weight: 600; margin-bottom: 12px; color: var(--text); }
+  .subtitle { color: var(--muted); font-size: 0.88rem; margin-bottom: 24px; }
+
+  .grid { display: grid; gap: 16px; }
+  .grid-2 { grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); }
+  .grid-3 { grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+  }
+
+  /* Rank display */
+  .rank-display {
+    text-align: center;
+    padding: 28px 20px;
+    background: linear-gradient(135deg, #1a1d27, #22253a);
+    border: 1px solid var(--accent);
+    border-radius: 16px;
+  }
+  .rank-number {
+    font-size: 5rem;
+    font-weight: 800;
+    line-height: 1;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .rank-label { color: var(--muted); font-size: 0.85rem; margin-top: 4px; }
+  .rank-pts   { font-size: 1.1rem; font-weight: 600; margin-top: 8px; }
+  .rank-status { margin-top: 10px; font-size: 0.9rem; font-weight: 600; padding: 6px 14px; border-radius: 20px; display: inline-block; }
+  .status-danger  { background: rgba(252,129,129,.15); color: var(--red); }
+  .status-warning { background: rgba(236,201,75,.15);  color: var(--yellow); }
+  .status-good    { background: rgba(72,187,120,.15);  color: var(--green); }
+
+  /* Category rows */
+  .cat-row {
+    display: grid;
+    grid-template-columns: 120px 1fr 80px 70px;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .cat-row:last-child { border-bottom: none; }
+  .cat-name { font-size: 0.88rem; color: var(--muted); }
+  .cat-bar-wrap { position: relative; height: 8px; background: #2a2d3a; border-radius: 4px; overflow: hidden; }
+  .cat-bar { height: 100%; border-radius: 4px; transition: width .4s ease; }
+  .cat-pts  { text-align: right; font-weight: 600; font-size: 0.88rem; }
+  .cat-max  { text-align: right; color: var(--muted); font-size: 0.8rem; }
+
+  /* Input grid */
+  .input-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
+  label { display: block; font-size: 0.8rem; color: var(--muted); margin-bottom: 4px; }
+  .input-group { position: relative; }
+  .input-group input {
+    width: 100%; background: #22253a; border: 1px solid var(--border);
+    color: var(--text); border-radius: 8px; padding: 8px 34px 8px 12px;
+    font-size: 0.95rem; outline: none;
+  }
+  .input-group input:focus { border-color: var(--accent); }
+  .input-group .unit {
+    position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+    color: var(--muted); font-size: 0.8rem; pointer-events: none;
+  }
+
+  /* Buttons */
+  .btn-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+  button {
+    background: #22253a; border: 1px solid var(--border);
+    color: var(--text); border-radius: 8px;
+    padding: 7px 14px; font-size: 0.83rem; cursor: pointer;
+    transition: background .15s, border-color .15s;
+  }
+  button:hover { background: #2d3150; border-color: var(--accent); }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+  button.primary:hover { background: #5a52d5; }
+  button.reset { background: transparent; border-color: var(--warn); color: var(--warn); }
+  button.reset:hover { background: rgba(255,107,107,.1); }
+
+  /* Path to rank */
+  .action-item {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 8px 12px; background: #22253a; border-radius: 8px; margin-bottom: 6px;
+  }
+  .action-item .badge {
+    background: var(--accent2); color: #0f1117;
+    border-radius: 12px; padding: 2px 10px; font-size: 0.78rem; font-weight: 700;
+  }
+
+  /* Commission */
+  .comm-row {
+    display: flex; justify-content: space-between;
+    padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 0.9rem;
+  }
+  .comm-row:last-child { border-bottom: none; }
+  .comm-val { font-weight: 700; }
+  .uplift { color: var(--green); }
+
+  /* Sales inputs */
+  .sales-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; }
+  .sales-grid label { font-size: 0.78rem; }
+
+  /* Tabs */
+  .tabs { display: flex; gap: 4px; margin-bottom: 16px; }
+  .tab {
+    padding: 6px 16px; border-radius: 8px; cursor: pointer; font-size: 0.85rem;
+    border: 1px solid var(--border); background: transparent; color: var(--muted);
+  }
+  .tab.active { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+
+  /* Scrollable panel */
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  hr.divider { border: none; border-top: 1px solid var(--border); margin: 16px 0; }
+</style>
+</head>
+<body>
+
+<h1>Power Rank Calculator</h1>
+<p class="subtitle">Prime Communications · Real-time rank & commission tracker</p>
+
+<!-- ── TOP ROW: rank display + categories ──────────────────────── -->
+<div class="grid grid-2" style="margin-bottom:16px">
+
+  <div class="rank-display" id="rankCard">
+    <div class="rank-number" id="rankNum">—</div>
+    <div class="rank-label">POWER RANK</div>
+    <div class="rank-pts" id="rankPts">— / 100 pts</div>
+    <div class="rank-status" id="rankStatus">Enter your numbers</div>
+  </div>
+
+  <div class="card">
+    <h2>Category Breakdown</h2>
+    <div id="catBreakdown"></div>
+  </div>
+
+</div>
+
+<!-- ── TABS ────────────────────────────────────────────────────── -->
+<div class="tabs">
+  <button class="tab active" onclick="showTab('inputs')">Manual Input</button>
+  <button class="tab" onclick="showTab('whatif')">What-If</button>
+  <button class="tab" onclick="showTab('path')">Path to 9.0</button>
+  <button class="tab" onclick="showTab('commission')">Commission</button>
+</div>
+
+<!-- ── PANEL: Manual Input ───────────────────────────────────────── -->
+<div class="panel active card" id="tab-inputs">
+  <h2>Enter Your Metrics</h2>
+  <p style="font-size:.82rem;color:var(--muted);margin-bottom:14px">
+    Sales categories: enter % to goal. &nbsp;Attach-rate categories (Protection / Rate Plan / Next Up): enter actual % attainment.
+  </p>
+  <div class="input-grid" id="inputGrid"></div>
+  <div class="btn-row">
+    <button class="primary" onclick="recalc()">Calculate</button>
+    <button class="reset" onclick="resetAll()">Reset</button>
+  </div>
+</div>
+
+<!-- ── PANEL: What-If ───────────────────────────────────────────── -->
+<div class="panel card" id="tab-whatif">
+  <h2>What-If Simulator</h2>
+  <p style="font-size:.82rem;color:var(--muted);margin-bottom:14px">
+    See how individual metric moves affect your rank without changing your saved inputs.
+  </p>
+  <div class="input-grid" id="whatifGrid"></div>
+  <div class="btn-row">
+    <button class="primary" onclick="runWhatIf()">Simulate</button>
+    <button onclick="resetWhatIf()">Clear overrides</button>
+  </div>
+  <div id="whatifResult" style="margin-top:16px"></div>
+</div>
+
+<!-- ── PANEL: Path to rank ──────────────────────────────────────── -->
+<div class="panel card" id="tab-path">
+  <h2>Path to Target Rank</h2>
+  <div class="btn-row" style="margin-bottom:16px">
+    <button onclick="showPath(8.0)" class="primary">Path to 8.0</button>
+    <button onclick="showPath(8.5)">Path to 8.5</button>
+    <button onclick="showPath(9.0)">Path to 9.0</button>
+    <button onclick="showPath(9.5)">Path to 9.5</button>
+  </div>
+  <div id="pathResult"></div>
+</div>
+
+<!-- ── PANEL: Commission ─────────────────────────────────────────── -->
+<div class="panel card" id="tab-commission">
+  <h2>Commission Projection</h2>
+  <p style="font-size:.82rem;color:var(--muted);margin-bottom:14px">
+    Enter MTD sales counts. The calculator shows your pay at your current rank vs. rank 9.
+  </p>
+  <div class="sales-grid" id="salesGrid"></div>
+  <div class="btn-row"><button class="primary" onclick="calcCommission()">Project Commission</button></div>
+  <div id="commResult" style="margin-top:16px"></div>
+</div>
+
+<!-- ── JS ───────────────────────────────────────────────────────── -->
+<script>
+// ── Scoring engine (inline) ───────────────────────────────────────────────────
+
+const METRIC_MAX_POINTS = {
+  opps:15, ppvga:35, fiber:15, aia:10, accessories:10,
+  protection:5, rate_plan:5, next_up:5,
+};
+
+const SALES_MULTIPLIERS = {
+  125:1.0, 100:0.9, 90:0.8, 80:0.7,
+  70:0.6, 60:0.5, 50:0.4, 40:0.3, 30:0.2, 20:0.1, 0:0.0,
+};
+const SALES_THRESHOLDS = Object.keys(SALES_MULTIPLIERS).map(Number).sort((a,b)=>b-a);
+
+const PROTECTION_TABLE = [[70,5],[68,4.5],[66,4],[63,3.5],[60,3]];
+const RATE_PLAN_TABLE  = [[82,5],[80,4.5],[78,4],[76,3.5],[74,3]];
+const NEXT_UP_TABLE    = [[80,5],[78,4.5],[76,4],[74,3.5],[72,3]];
+const ATTACH_TABLES    = { protection:PROTECTION_TABLE, rate_plan:RATE_PLAN_TABLE, next_up:NEXT_UP_TABLE };
+
+const COMMISSION_TIERS = {
+  rank_8: { new_voice_premium:35, new_voice_extra:25, new_voice_starter:15, fiber_aia:50, voice_upgrade:5, accessories_pct:0.06, pa1:3, pa4:6, htp:6 },
+  rank_9: { new_voice_premium:70, new_voice_extra:50, new_voice_starter:25, fiber_aia:60, voice_upgrade:5, accessories_pct:0.07, pa1:4, pa4:10, htp:10 },
+};
+
+function percentToPoints(metric, percent) {
+  if (percent === null || isNaN(percent)) return 0;
+  const table = ATTACH_TABLES[metric];
+  if (table) {
+    for (const [t,p] of table) if (percent >= t) return p;
+    return 0;
+  }
+  const maxPts = METRIC_MAX_POINTS[metric];
+  if (maxPts === undefined) return 0;
+  for (const t of SALES_THRESHOLDS)
+    if (percent >= t) return Math.round(maxPts * SALES_MULTIPLIERS[t] * 100) / 100;
+  return 0;
+}
+
+function computeAll(metrics) {
+  const pts = {};
+  for (const m of Object.keys(METRIC_MAX_POINTS)) pts[m] = percentToPoints(m, metrics[m] ?? 0);
+  const total = Math.round(Object.values(pts).reduce((s,v)=>s+v,0)*100)/100;
+  const rank  = Math.round(total/10*100)/100;
+  return { pts, total, rank };
+}
+
+function pathToRank(metrics, targetRank) {
+  const { pts:curPts, total:curTotal, rank:curRk } = computeAll(metrics);
+  const targetTotal = targetRank * 10;
+  const candidates = [];
+  for (const m of Object.keys(METRIC_MAX_POINTS)) {
+    const curPct = metrics[m] || 0;
+    const curPt  = percentToPoints(m, curPct);
+    const maxPt  = percentToPoints(m, 125);
+    const gain   = Math.round((maxPt - curPt)*100)/100;
+    if (gain > 0) candidates.push({metric:m, current_pct:curPct, max_gain:gain});
+  }
+  candidates.sort((a,b)=>b.max_gain-a.max_gain);
+  const actions = [];
+  let projected = curTotal;
+  for (const c of candidates) {
+    if (projected >= targetTotal) break;
+    actions.push({metric:c.metric, current_pct:c.current_pct, points_added:c.max_gain});
+    projected = Math.round((projected+c.max_gain)*100)/100;
+  }
+  return { current_rank:curRk, current_points:curTotal, target_rank:targetRank,
+           target_points:targetTotal, needed_points:Math.max(0,Math.round((targetTotal-curTotal)*100)/100),
+           recommended_actions:actions, projected_points:projected, projected_rank:Math.round(projected/10*100)/100 };
+}
+
+function calcCommPayout(sales, tierKey) {
+  const r = COMMISSION_TIERS[tierKey];
+  return Math.round(( (sales.new_voice_premium||0)*r.new_voice_premium
+    + (sales.new_voice_extra||0)*r.new_voice_extra
+    + (sales.new_voice_starter||0)*r.new_voice_starter
+    + (sales.fiber_aia||0)*r.fiber_aia
+    + (sales.voice_upgrade||0)*r.voice_upgrade
+    + (sales.accessories_revenue||0)*r.accessories_pct
+    + (sales.pa1||0)*r.pa1
+    + (sales.pa4||0)*r.pa4
+    + (sales.htp||0)*r.htp )*100)/100;
+}
+
+// ── UI state ──────────────────────────────────────────────────────────────────
+
+const METRIC_LABELS = {
+  opps:'Opps', ppvga:'PPVGA', fiber:'Fiber', aia:'AIA',
+  accessories:'Accessories', protection:'Protection', rate_plan:'Rate Plan %', next_up:'Next Up',
+};
+const ATTACH_METRICS = new Set(['protection','rate_plan','next_up']);
+
+const SALES_LABELS = {
+  new_voice_premium:'New Voice Premium', new_voice_extra:'New Voice Extra',
+  new_voice_starter:'New Voice Starter', fiber_aia:'Fiber / AIA Sales',
+  voice_upgrade:'Voice Upgrades', accessories_revenue:'Accessories Revenue ($)',
+  pa1:'PA1', pa4:'PA4', htp:'HTP',
+};
+
+let state = {}; // metric → percent
+
+// ── Build input grids ─────────────────────────────────────────────────────────
+
+function buildInputGrid(containerId, onInput) {
+  const el = document.getElementById(containerId);
+  el.innerHTML = '';
+  for (const [m, label] of Object.entries(METRIC_LABELS)) {
+    const hint = ATTACH_METRICS.has(m) ? 'attach %' : '% to goal';
+    const div = document.createElement('div');
+    div.className = 'input-group';
+    div.innerHTML = `
+      <label>${label} <span style="color:var(--muted);font-size:.75rem">(${hint})</span></label>
+      <input type="number" id="${containerId}_${m}" min="0" max="300" step="0.1"
+             placeholder="0" oninput="${onInput}()" />
+      <span class="unit">%</span>`;
+    el.appendChild(div);
+  }
+}
+
+function buildSalesGrid() {
+  const el = document.getElementById('salesGrid');
+  el.innerHTML = '';
+  for (const [k, label] of Object.entries(SALES_LABELS)) {
+    const div = document.createElement('div');
+    div.className = 'input-group';
+    div.innerHTML = `
+      <label>${label}</label>
+      <input type="number" id="sales_${k}" min="0" step="0.01" placeholder="0" />`;
+    el.appendChild(div);
+  }
+}
+
+buildInputGrid('inputGrid', 'onMainInput');
+buildInputGrid('whatifGrid', 'noop');
+buildSalesGrid();
+
+function noop() {}
+
+// ── Read helpers ──────────────────────────────────────────────────────────────
+
+function readMetrics(prefix) {
+  const m = {};
+  for (const k of Object.keys(METRIC_LABELS)) {
+    const v = parseFloat(document.getElementById(`${prefix}_${k}`)?.value);
+    if (!isNaN(v)) m[k] = v;
+  }
+  return m;
+}
+
+function readSales() {
+  const s = {};
+  for (const k of Object.keys(SALES_LABELS)) {
+    const v = parseFloat(document.getElementById(`sales_${k}`)?.value);
+    if (!isNaN(v)) s[k] = v;
+  }
+  return s;
+}
+
+// ── Colour helpers ────────────────────────────────────────────────────────────
+
+function barColor(pct) {
+  if (pct >= 100) return '#48bb78';
+  if (pct >= 70)  return '#6c63ff';
+  if (pct >= 50)  return '#ecc94b';
+  return '#fc8181';
+}
+
+function rankColor(rank) {
+  if (rank >= 9.0) return 'var(--green)';
+  if (rank >= 8.0) return 'var(--accent2)';
+  if (rank >= 7.0) return 'var(--yellow)';
+  return 'var(--red)';
+}
+
+// ── Main recalc ───────────────────────────────────────────────────────────────
+
+function onMainInput() { state = readMetrics('inputGrid'); updateUI(); }
+
+function recalc() { state = readMetrics('inputGrid'); updateUI(); }
+
+function updateUI() {
+  const { pts, total, rank } = computeAll(state);
+
+  // Rank card
+  document.getElementById('rankNum').textContent = rank.toFixed(1);
+  document.getElementById('rankNum').style.background = rankColor(rank);
+  document.getElementById('rankNum').style.webkitBackgroundClip = 'unset';
+  document.getElementById('rankNum').style.webkitTextFillColor = rankColor(rank);
+  document.getElementById('rankPts').textContent = `${total.toFixed(2)} / 100 pts`;
+
+  const statusEl = document.getElementById('rankStatus');
+  if (rank >= 9.0) {
+    statusEl.textContent = 'Rank 9 — Maximum tier';
+    statusEl.className = 'rank-status status-good';
+  } else if (rank >= 8.5) {
+    statusEl.textContent = 'Strong — push for 9.0';
+    statusEl.className = 'rank-status status-good';
+  } else if (rank >= 8.0) {
+    statusEl.textContent = 'At 8.0 — build cushion';
+    statusEl.className = 'rank-status status-warning';
+  } else if (rank > 0) {
+    statusEl.textContent = 'Below 8.0 — take action';
+    statusEl.className = 'rank-status status-danger';
+  } else {
+    statusEl.textContent = 'Enter your numbers';
+    statusEl.className = 'rank-status status-warning';
+  }
+
+  // Category breakdown
+  const cb = document.getElementById('catBreakdown');
+  cb.innerHTML = '';
+  for (const [m, maxP] of Object.entries(METRIC_MAX_POINTS)) {
+    const pct   = state[m] || 0;
+    const p     = pts[m]   || 0;
+    const barW  = Math.min(100, (p / maxP) * 100);
+    const color = barColor(pct);
+    cb.innerHTML += `
+      <div class="cat-row">
+        <div class="cat-name">${METRIC_LABELS[m]}</div>
+        <div class="cat-bar-wrap">
+          <div class="cat-bar" style="width:${barW}%;background:${color}"></div>
+        </div>
+        <div class="cat-pts" style="color:${color}">${p.toFixed(1)}</div>
+        <div class="cat-max">/ ${maxP}</div>
+      </div>`;
+  }
+}
+
+// ── What-if ───────────────────────────────────────────────────────────────────
+
+function runWhatIf() {
+  const overrides = readMetrics('whatifGrid');
+  const base      = { ...state };
+  const changes   = {};
+  for (const [k,v] of Object.entries(overrides)) { if (!isNaN(v)) changes[k] = v; }
+  if (!Object.keys(changes).length) { document.getElementById('whatifResult').innerHTML='<p style="color:var(--muted)">Enter at least one override value.</p>'; return; }
+
+  const beforeR        = computeAll(base);
+  const afterMetrics   = { ...base, ...changes };
+  const afterR         = computeAll(afterMetrics);
+  const rankDelta      = Math.round((afterR.rank - beforeR.rank)*100)/100;
+  const ptsDelta       = Math.round((afterR.total - beforeR.total)*100)/100;
+  const sign           = d => d > 0 ? `+${d}` : `${d}`;
+  const col            = d => d > 0 ? 'var(--green)' : d < 0 ? 'var(--red)' : 'var(--muted)';
+
+  let html = `
+    <div style="display:flex;gap:20px;flex-wrap:wrap;margin-bottom:12px">
+      <div class="card" style="flex:1;min-width:140px;text-align:center">
+        <div style="color:var(--muted);font-size:.8rem">Before</div>
+        <div style="font-size:2rem;font-weight:800;color:var(--accent)">${beforeR.rank.toFixed(1)}</div>
+        <div style="font-size:.85rem">${beforeR.total.toFixed(2)} pts</div>
+      </div>
+      <div class="card" style="flex:1;min-width:140px;text-align:center">
+        <div style="color:var(--muted);font-size:.8rem">After</div>
+        <div style="font-size:2rem;font-weight:800;color:${rankDelta>=0?'var(--green)':'var(--red)'}">${afterR.rank.toFixed(1)}</div>
+        <div style="font-size:.85rem">${afterR.total.toFixed(2)} pts</div>
+      </div>
+      <div class="card" style="flex:1;min-width:140px;text-align:center">
+        <div style="color:var(--muted);font-size:.8rem">Change</div>
+        <div style="font-size:2rem;font-weight:800;color:${col(rankDelta)}">${sign(rankDelta)}</div>
+        <div style="font-size:.85rem;color:${col(ptsDelta)}">${sign(ptsDelta)} pts</div>
+      </div>
+    </div>`;
+
+  // per-category
+  html += '<div style="font-size:.85rem">';
+  for (const m of Object.keys(METRIC_MAX_POINTS)) {
+    const delta = Math.round(((afterR.pts[m]||0)-(beforeR.pts[m]||0))*100)/100;
+    if (delta !== 0) {
+      html += `<div class="comm-row"><span>${METRIC_LABELS[m]}</span><span style="color:${col(delta)};font-weight:700">${sign(delta)} pts</span></div>`;
+    }
+  }
+  html += '</div>';
+  document.getElementById('whatifResult').innerHTML = html;
+}
+
+function resetWhatIf() {
+  for (const k of Object.keys(METRIC_LABELS)) {
+    const el = document.getElementById(`whatifGrid_${k}`);
+    if (el) el.value = '';
+  }
+  document.getElementById('whatifResult').innerHTML = '';
+}
+
+// ── Path to rank ──────────────────────────────────────────────────────────────
+
+function showPath(targetRank) {
+  const result = pathToRank(state, targetRank);
+  const el     = document.getElementById('pathResult');
+
+  if (result.needed_points <= 0) {
+    el.innerHTML = `<p style="color:var(--green);font-weight:600">You already meet rank ${targetRank} with ${result.current_points} pts (rank ${result.current_rank}).</p>`;
+    return;
+  }
+
+  let html = `
+    <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:16px">
+      <div class="card" style="flex:1;min-width:120px;text-align:center">
+        <div style="color:var(--muted);font-size:.8rem">Current</div>
+        <div style="font-size:1.8rem;font-weight:800;color:var(--accent)">${result.current_rank.toFixed(1)}</div>
+        <div style="font-size:.82rem">${result.current_points} pts</div>
+      </div>
+      <div class="card" style="flex:1;min-width:120px;text-align:center">
+        <div style="color:var(--muted);font-size:.8rem">Need</div>
+        <div style="font-size:1.8rem;font-weight:800;color:var(--warn)">+${result.needed_points}</div>
+        <div style="font-size:.82rem">points</div>
+      </div>
+      <div class="card" style="flex:1;min-width:120px;text-align:center">
+        <div style="color:var(--muted);font-size:.8rem">Projected</div>
+        <div style="font-size:1.8rem;font-weight:800;color:var(--green)">${result.projected_rank.toFixed(1)}</div>
+        <div style="font-size:.82rem">${result.projected_points} pts</div>
+      </div>
+    </div>
+    <h2 style="margin-bottom:10px">Recommended moves</h2>`;
+
+  for (const a of result.recommended_actions) {
+    html += `
+      <div class="action-item">
+        <div>
+          <div style="font-weight:600">${METRIC_LABELS[a.metric]}</div>
+          <div style="font-size:.8rem;color:var(--muted)">currently ${a.current_pct.toFixed(1)}% → max out</div>
+        </div>
+        <span class="badge">+${a.points_added} pts</span>
+      </div>`;
+  }
+  el.innerHTML = html;
+}
+
+// ── Commission ────────────────────────────────────────────────────────────────
+
+function calcCommission() {
+  const sales    = readSales();
+  const { rank } = computeAll(state);
+  const tierKey  = rank >= 9.0 ? 'rank_9' : 'rank_8';
+  const curPay   = calcCommPayout(sales, tierKey);
+  const r9Pay    = calcCommPayout(sales, 'rank_9');
+  const uplift   = Math.round((r9Pay - curPay)*100)/100;
+
+  const fmt = v => '$' + v.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+
+  document.getElementById('commResult').innerHTML = `
+    <div class="card" style="margin-top:0">
+      <div class="comm-row">
+        <span>Current rank</span>
+        <span class="comm-val">${rank.toFixed(1)} (${tierKey.replace('_',' ')})</span>
+      </div>
+      <div class="comm-row">
+        <span>Pay at current rank</span>
+        <span class="comm-val">${fmt(curPay)}</span>
+      </div>
+      <div class="comm-row">
+        <span>Pay at rank 9</span>
+        <span class="comm-val">${fmt(r9Pay)}</span>
+      </div>
+      <div class="comm-row">
+        <span>Rank 9 uplift</span>
+        <span class="comm-val uplift">+${fmt(uplift)}</span>
+      </div>
+    </div>`;
+}
+
+// ── Reset ─────────────────────────────────────────────────────────────────────
+
+function resetAll() {
+  state = {};
+  for (const k of Object.keys(METRIC_LABELS)) {
+    const el = document.getElementById(`inputGrid_${k}`);
+    if (el) el.value = '';
+  }
+  document.getElementById('catBreakdown').innerHTML = '';
+  document.getElementById('rankNum').textContent   = '—';
+  document.getElementById('rankPts').textContent   = '— / 100 pts';
+  document.getElementById('rankStatus').textContent = 'Enter your numbers';
+  document.getElementById('rankStatus').className   = 'rank-status status-warning';
+  document.getElementById('rankNum').style.webkitTextFillColor = 'var(--accent)';
+}
+
+// ── Tab switching ─────────────────────────────────────────────────────────────
+
+function showTab(name) {
+  document.querySelectorAll('.tab').forEach((t,i) => {
+    const ids = ['inputs','whatif','path','commission'];
+    t.classList.toggle('active', ids[i] === name);
+  });
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.getElementById(`tab-${name}`).classList.add('active');
+}
+
+// Init
+updateUI();
+</script>
+</body>
+</html>
