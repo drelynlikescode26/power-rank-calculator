@@ -435,8 +435,8 @@ function toggleInputMode() {
   if(btn) btn.textContent=inputMode==='pts'?'Switch to % Mode':'Switch to Points Mode';
   const note=document.getElementById('modeNote');
   if(note) note.textContent=inputMode==='pts'
-    ?”Points Earned mode: enter the number from “X of Y PTS” on your portal circles.”
-    :"Sales categories → enter % to goal.  Protection / Rate Plan / Next Up → enter your actual attach %.";
+    ?'Points Earned mode: enter the number from X of Y PTS on your portal circles.'
+    :'Sales categories → enter % to goal.  Protection / Rate Plan / Next Up → enter your actual attach %.';
 }
 
 function buildWhatIfForm() {
