@@ -796,38 +796,71 @@ function extractPcts(str) {
   return [...str.matchAll(/(\d{1,3}(?:\.\d+)?)\s*%/g)].map(m=>parseFloat(m[1]));
 }
 
+// Compute points from % without checking inputMode (used for OCR % fallback).
+function pctToPoints(id, pct) {
+  const tbl=ATTACH_TBL[id];
+  if(tbl){for(const[t,p]of tbl)if(pct>=t)return p;return 0;}
+  const cfg=METRIC_CFG.find(m=>m.id===id);if(!cfg)return 0;
+  for(const t of SALES_THR)if(pct>=t)return Math.round(cfg.max*SALES_MUL[t]*100)/100;
+  return 0;
+}
+
 function parseOcrText(text) {
   const found={};
-  const lines=text.split('\n').map(l=>l.trim()).filter(Boolean);
 
-  // ── PASS 1: "X of Y PTS" proximity (most reliable for portal circles) ──────
-  const PTS_RE=/(\d+(?:\.\d+)?)\s+of\s+(\d+(?:\.\d+)?)\s+(?:pts?|points?)/gi;
-  for(const{keys,id}of OCR_KEYWORDS){
-    if(id in found) continue;
-    const cfg=METRIC_CFG.find(m=>m.id===id);
-    if(!cfg) continue;
-    for(let i=0;i<lines.length;i++){
-      if(!keys.some(k=>lines[i].toLowerCase().includes(k))) continue;
-      const ctx=lines.slice(Math.max(0,i-3),i+4).join(' ');
-      let best=null;
-      const rx=new RegExp(PTS_RE.source,'gi');
-      let m2;
-      while((m2=rx.exec(ctx))!==null){
-        const earned=parseFloat(m2[1]);
-        const maxV=parseFloat(m2[2]);
-        if(maxV===cfg.max){best=earned;break;}
-        if(best===null)best=earned;
-      }
-      if(best!==null){
-        found[id+'_pts']=best;
-        if(!(id in found))
-          found[id]=inputMode==='pts'?best:ptsEarnedToApproxPct(id,best);
-        break;
-      }
+  // ── Pre-clean: fix common OCR digit/letter swaps ─────────────────────────
+  // "O" (letter) often replaces "0" (zero); "3 5" split where "3.5" was intended.
+  const clean=text
+    .replace(/\b(\d)\s+(\d)(\s+of\s+\d)/gi,'$1.$2$3')  // "3 5 of 5" → "3.5 of 5"
+    .replace(/\bO(\s+of\s)/gi,'0$1')    // letter O → 0 before "of"
+    .replace(/(\s+of\s+)O\b/gi,'$10')   // letter O → 0 after "of"
+    .replace(/\bI(\s+of\s)/gi,'1$1')    // letter I → 1
+    .replace(/\bl(\s+of\s)/gi,'1$1');   // letter l → 1
+
+  const lines=clean.split('\n').map(l=>l.trim()).filter(Boolean);
+
+  // ── PASS 1: Group-based "X of Y PTS" ────────────────────────────────────
+  // The portal ALWAYS shows metrics in this order:
+  //   Row 1: OPPS · PPVGA · FIBER · AIA
+  //   Row 2: ACCESSORIES · PROTECTION · RATE PLAN % · NEXT UP
+  // Within each max-points group the OCR output preserves that left-to-right order,
+  // so we assign by appearance order within each group:
+  //   max=35 → [ppvga]
+  //   max=15 → [opps, fiber]
+  //   max=10 → [aia, accessories]
+  //   max=5  → [protection, rate_plan, next_up]
+  {
+    const PTS_RE=/(\d+(?:[.,]\d+)?)\s+of\s+(\d+(?:[.,]\d+)?)\s+(?:pts?|points?)/gi;
+    const CAP={35:1,15:2,10:2,5:3}; // max occurrences expected per group
+    const grp={};
+    let mx;
+    while((mx=PTS_RE.exec(clean))!==null){
+      const earned=parseFloat(mx[1].replace(',','.'));
+      const rawMax=parseFloat(mx[2].replace(',','.'));
+      const maxV=Math.round(rawMax);
+      if(isNaN(earned)||isNaN(maxV))continue;
+      if(earned>maxV+0.5)continue;          // sanity: earned ≤ max
+      if(!CAP[maxV])continue;               // ignore unexpected max values
+      if(!grp[maxV])grp[maxV]=[];
+      if(grp[maxV].length<CAP[maxV])grp[maxV].push(earned);
     }
+
+    function setPts(id,earned){
+      found[id+'_pts']=earned;
+      found[id]=inputMode==='pts'?earned:ptsEarnedToApproxPct(id,earned);
+    }
+    const g35=grp[35]||[],g15=grp[15]||[],g10=grp[10]||[],g5=grp[5]||[];
+    if(g35[0]!=null)setPts('ppvga',      g35[0]);
+    if(g15[0]!=null)setPts('opps',       g15[0]);
+    if(g15[1]!=null)setPts('fiber',      g15[1]);
+    if(g10[0]!=null)setPts('aia',        g10[0]);
+    if(g10[1]!=null)setPts('accessories',g10[1]);
+    if(g5[0] !=null)setPts('protection', g5[0]);
+    if(g5[1] !=null)setPts('rate_plan',  g5[1]);
+    if(g5[2] !=null)setPts('next_up',    g5[2]);
   }
 
-  // ── PASS 2: Grid positional (name row + preceding % row) ─────────────────
+  // ── PASS 2: Grid positional % (name row → preceding % row) ───────────────
   for(let i=0;i<lines.length;i++){
     const lineLow=lines[i].toLowerCase();
     const hits=[];
@@ -837,64 +870,44 @@ function parseOcrText(text) {
         if(idx!==-1){hits.push({id,pos:idx});break;}
       }
     }
-    if(hits.length<2) continue;
+    if(hits.length<2)continue;
     hits.sort((a,b)=>a.pos-b.pos);
     for(let j=Math.max(0,i-3);j<i;j++){
       const pcts=extractPcts(lines[j]);
-      if(pcts.length!==hits.length) continue;
+      if(pcts.length!==hits.length)continue;
       let assigned=0;
       for(let k=0;k<hits.length;k++){
         const{id}=hits[k];
-        if(id in found) continue;
+        if(id in found)continue;
         const val=pcts[k];
         const isAttach=METRIC_CFG.find(m=>m.id===id)?.attach;
-        if(pctValid(val,isAttach)){found[id]=val;assigned++;}
+        if(pctValid(val,isAttach)){
+          found[id]=inputMode==='pts'?pctToPoints(id,val):val;
+          assigned++;
+        }
       }
-      if(assigned>0) break;
+      if(assigned>0)break;
     }
   }
 
-  // ── PASS 3: Direct adjacency (1–2 surrounding lines) ─────────────────────
+  // ── PASS 3: Adjacency (1–2 lines around keyword) ─────────────────────────
   for(const{keys,id}of OCR_KEYWORDS){
-    if(id in found) continue;
+    if(id in found)continue;
     const isAttach=METRIC_CFG.find(m=>m.id===id)?.attach;
     for(let i=0;i<lines.length;i++){
-      if(!keys.some(k=>lines[i].toLowerCase().includes(k))) continue;
-      for(let j=Math.max(0,i-2);j<i;j++){
+      if(!keys.some(k=>lines[i].toLowerCase().includes(k)))continue;
+      for(let j=Math.max(0,i-2);j<=Math.min(lines.length-1,i+1);j++){
+        if(j===i)continue;
         const pcts=extractPcts(lines[j]);
         let c=null;
-        if(isAttach) c=pcts.find(v=>pctValid(v,true))??null;
+        if(isAttach)c=pcts.find(v=>pctValid(v,true))??null;
         else{const v=pcts.filter(v=>pctValid(v,false));if(v.length)c=Math.max(...v);}
-        if(c!==null){found[id]=c;break;}
+        if(c!==null){
+          found[id]=inputMode==='pts'?pctToPoints(id,c):c;
+          break;
+        }
       }
-      if(id in found) break;
-      const same=extractPcts(lines[i]);
-      let c=null;
-      if(isAttach) c=same.find(v=>pctValid(v,true))??null;
-      else{const v=same.filter(v=>pctValid(v,false));if(v.length)c=Math.max(...v);}
-      if(c!==null){found[id]=c;break;}
-      if(i+1<lines.length){
-        const nxt=extractPcts(lines[i+1]);
-        let c2=null;
-        if(isAttach) c2=nxt.find(v=>pctValid(v,true))??null;
-        else{const v=nxt.filter(v=>pctValid(v,false));if(v.length)c2=Math.max(...v);}
-        if(c2!==null){found[id]=c2;break;}
-      }
-    }
-  }
-
-  // ── PASS 4: Narrow fallback (±2 lines only) ───────────────────────────────
-  for(const{keys,id}of OCR_KEYWORDS){
-    if(id in found) continue;
-    const isAttach=METRIC_CFG.find(m=>m.id===id)?.attach;
-    for(let i=0;i<lines.length;i++){
-      if(!keys.some(k=>lines[i].toLowerCase().includes(k))) continue;
-      const ctx=lines.slice(Math.max(0,i-2),i+3).join(' ');
-      const pcts=extractPcts(ctx);
-      let c=null;
-      if(isAttach) c=pcts.find(v=>pctValid(v,true))??null;
-      else{const v=pcts.filter(v=>pctValid(v,false));if(v.length)c=Math.max(...v);}
-      if(c!==null){found[id]=c;break;}
+      if(id in found)break;
     }
   }
 
