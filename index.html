@@ -1,622 +1,848 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>Power Rank Calculator</title>
 <style>
-  :root {
-    --bg:        #0f1117;
-    --card:      #1a1d27;
-    --border:    #2a2d3a;
-    --accent:    #6c63ff;
-    --accent2:   #00d4aa;
-    --warn:      #ff6b6b;
-    --text:      #e2e8f0;
-    --muted:     #8892a4;
-    --green:     #48bb78;
-    --yellow:    #ecc94b;
-    --red:       #fc8181;
-  }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body {
-    background: var(--bg); color: var(--text);
-    font-family: 'Segoe UI', system-ui, sans-serif;
-    font-size: 15px; line-height: 1.5;
-    padding: 20px;
-  }
-  h1 { font-size: 1.6rem; font-weight: 700; color: var(--accent); margin-bottom: 4px; }
-  h2 { font-size: 1.1rem; font-weight: 600; margin-bottom: 12px; color: var(--text); }
-  .subtitle { color: var(--muted); font-size: 0.88rem; margin-bottom: 24px; }
+:root{
+  --bg:#0d0f18;--card:#141720;--card2:#1a1e2e;--border:#252a3d;
+  --accent:#7c6ff7;--accent2:#00d4aa;--warn:#ff6b6b;--gold:#f6c90e;
+  --text:#e2e8f0;--muted:#6b7280;--green:#34d399;--yellow:#fbbf24;--red:#f87171;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;font-size:14px;line-height:1.5;min-height:100vh}
 
-  .grid { display: grid; gap: 16px; }
-  .grid-2 { grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); }
-  .grid-3 { grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+/* ── Layout ── */
+.app{max-width:1300px;margin:0 auto;padding:16px}
+header{display:flex;align-items:center;gap:12px;margin-bottom:20px}
+header h1{font-size:1.5rem;font-weight:800;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+header .subtitle{color:var(--muted);font-size:.8rem}
+.main-grid{display:grid;grid-template-columns:380px 1fr;gap:16px}
+@media(max-width:860px){.main-grid{grid-template-columns:1fr}}
 
-  .card {
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 20px;
-  }
+/* ── Cards ── */
+.card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:18px}
+.card-title{font-size:.82rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:14px}
 
-  /* Rank display */
-  .rank-display {
-    text-align: center;
-    padding: 28px 20px;
-    background: linear-gradient(135deg, #1a1d27, #22253a);
-    border: 1px solid var(--accent);
-    border-radius: 16px;
-  }
-  .rank-number {
-    font-size: 5rem;
-    font-weight: 800;
-    line-height: 1;
-    background: linear-gradient(135deg, var(--accent), var(--accent2));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-  }
-  .rank-label { color: var(--muted); font-size: 0.85rem; margin-top: 4px; }
-  .rank-pts   { font-size: 1.1rem; font-weight: 600; margin-top: 8px; }
-  .rank-status { margin-top: 10px; font-size: 0.9rem; font-weight: 600; padding: 6px 14px; border-radius: 20px; display: inline-block; }
-  .status-danger  { background: rgba(252,129,129,.15); color: var(--red); }
-  .status-warning { background: rgba(236,201,75,.15);  color: var(--yellow); }
-  .status-good    { background: rgba(72,187,120,.15);  color: var(--green); }
+/* ── Upload zone ── */
+.upload-zone{
+  border:2px dashed var(--border);border-radius:12px;padding:28px 16px;
+  text-align:center;cursor:pointer;transition:border-color .2s,background .2s;
+  position:relative;
+}
+.upload-zone:hover,.upload-zone.drag{border-color:var(--accent);background:rgba(124,111,247,.06)}
+.upload-zone input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.upload-icon{font-size:2rem;margin-bottom:8px;opacity:.5}
+.upload-text{color:var(--muted);font-size:.85rem}
+.upload-text strong{color:var(--accent)}
+#previewWrap{margin-top:12px;display:none}
+#previewImg{width:100%;border-radius:8px;border:1px solid var(--border);max-height:280px;object-fit:contain}
+.ocr-bar{margin-top:10px;display:none}
+.ocr-progress{height:4px;background:var(--border);border-radius:2px;overflow:hidden;margin-bottom:6px}
+.ocr-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));width:0;transition:width .3s;border-radius:2px}
+.ocr-status{font-size:.78rem;color:var(--muted)}
 
-  /* Category rows */
-  .cat-row {
-    display: grid;
-    grid-template-columns: 120px 1fr 80px 70px;
-    align-items: center;
-    gap: 10px;
-    padding: 8px 0;
-    border-bottom: 1px solid var(--border);
-  }
-  .cat-row:last-child { border-bottom: none; }
-  .cat-name { font-size: 0.88rem; color: var(--muted); }
-  .cat-bar-wrap { position: relative; height: 8px; background: #2a2d3a; border-radius: 4px; overflow: hidden; }
-  .cat-bar { height: 100%; border-radius: 4px; transition: width .4s ease; }
-  .cat-pts  { text-align: right; font-weight: 600; font-size: 0.88rem; }
-  .cat-max  { text-align: right; color: var(--muted); font-size: 0.8rem; }
+/* ── Rank display ── */
+.rank-hero{text-align:center;padding:24px 16px;background:linear-gradient(145deg,#141720,#1a1e2e);border-radius:14px;border:1px solid var(--border);margin-bottom:12px;position:relative;overflow:hidden}
+.rank-hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 50% -20%,rgba(124,111,247,.15),transparent 60%);pointer-events:none}
+.rank-number{font-size:5.5rem;font-weight:900;line-height:1;letter-spacing:-4px}
+.rank-max{font-size:2rem;opacity:.4;font-weight:700}
+.rank-label{color:var(--muted);font-size:.78rem;letter-spacing:.1em;text-transform:uppercase;margin-top:2px}
+.rank-pts{margin-top:6px;font-size:.95rem;color:var(--muted)}
+.rank-pts strong{color:var(--text)}
+.rank-badge{display:inline-flex;align-items:center;gap:6px;padding:5px 14px;border-radius:20px;font-size:.8rem;font-weight:700;margin-top:10px}
+.badge-great  {background:rgba(52,211,153,.15);color:var(--green)}
+.badge-good   {background:rgba(0,212,170,.15); color:var(--accent2)}
+.badge-ok     {background:rgba(251,191,36,.15); color:var(--yellow)}
+.badge-danger {background:rgba(248,113,113,.15);color:var(--red)}
 
-  /* Input grid */
-  .input-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
-  label { display: block; font-size: 0.8rem; color: var(--muted); margin-bottom: 4px; }
-  .input-group { position: relative; }
-  .input-group input {
-    width: 100%; background: #22253a; border: 1px solid var(--border);
-    color: var(--text); border-radius: 8px; padding: 8px 34px 8px 12px;
-    font-size: 0.95rem; outline: none;
-  }
-  .input-group input:focus { border-color: var(--accent); }
-  .input-group .unit {
-    position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
-    color: var(--muted); font-size: 0.8rem; pointer-events: none;
-  }
+/* ── Category rows ── */
+.cat-table{width:100%;border-collapse:collapse}
+.cat-table td{padding:7px 4px;vertical-align:middle}
+.cat-table tr{border-bottom:1px solid var(--border)}
+.cat-table tr:last-child{border-bottom:none}
+.cat-name{font-size:.82rem;color:var(--muted);white-space:nowrap;width:100px}
+.cat-bar-wrap{position:relative;height:6px;background:var(--border);border-radius:3px;overflow:hidden;min-width:80px}
+.cat-bar{height:100%;border-radius:3px;transition:width .4s ease,background .4s}
+.cat-pts-val{text-align:right;font-weight:700;font-size:.85rem;width:52px;white-space:nowrap}
+.cat-pts-max{text-align:right;color:var(--muted);font-size:.78rem;width:40px;white-space:nowrap}
 
-  /* Buttons */
-  .btn-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
-  button {
-    background: #22253a; border: 1px solid var(--border);
-    color: var(--text); border-radius: 8px;
-    padding: 7px 14px; font-size: 0.83rem; cursor: pointer;
-    transition: background .15s, border-color .15s;
-  }
-  button:hover { background: #2d3150; border-color: var(--accent); }
-  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
-  button.primary:hover { background: #5a52d5; }
-  button.reset { background: transparent; border-color: var(--warn); color: var(--warn); }
-  button.reset:hover { background: rgba(255,107,107,.1); }
+/* ── Inputs ── */
+.field{margin-bottom:10px}
+.field label{display:block;font-size:.78rem;color:var(--muted);margin-bottom:3px}
+.field-hint{font-size:.7rem;color:#4a5068;float:right}
+.input-wrap{position:relative;display:flex;align-items:center}
+.input-wrap input{
+  flex:1;background:#111420;border:1px solid var(--border);
+  color:var(--text);border-radius:8px;padding:8px 36px 8px 12px;
+  font-size:.9rem;outline:none;width:100%;
+}
+.input-wrap input:focus{border-color:var(--accent);background:#161b2e}
+.input-wrap .suffix{position:absolute;right:10px;color:var(--muted);font-size:.78rem;pointer-events:none}
+.input-wrap .pts-badge{
+  position:absolute;right:36px;background:var(--card2);
+  border-radius:4px;padding:1px 6px;font-size:.7rem;font-weight:700;
+  white-space:nowrap;pointer-events:none;
+}
+.input-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.input-grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
 
-  /* Path to rank */
-  .action-item {
-    display: flex; justify-content: space-between; align-items: center;
-    padding: 8px 12px; background: #22253a; border-radius: 8px; margin-bottom: 6px;
-  }
-  .action-item .badge {
-    background: var(--accent2); color: #0f1117;
-    border-radius: 12px; padding: 2px 10px; font-size: 0.78rem; font-weight: 700;
-  }
+/* ── Target rank ── */
+.rank-btns{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
+.rank-btn{
+  flex:1;min-width:52px;padding:8px 4px;border-radius:8px;
+  border:1px solid var(--border);background:var(--card2);
+  color:var(--muted);font-size:.82rem;font-weight:600;cursor:pointer;
+  text-align:center;transition:all .15s;
+}
+.rank-btn:hover{border-color:var(--accent);color:var(--text)}
+.rank-btn.active{border-color:var(--accent);background:rgba(124,111,247,.2);color:var(--accent);font-weight:700}
 
-  /* Commission */
-  .comm-row {
-    display: flex; justify-content: space-between;
-    padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 0.9rem;
-  }
-  .comm-row:last-child { border-bottom: none; }
-  .comm-val { font-weight: 700; }
-  .uplift { color: var(--green); }
+/* ── Action cards ── */
+.action-card{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:10px 14px;background:var(--card2);border-radius:10px;
+  margin-bottom:6px;border:1px solid var(--border);
+}
+.action-card .ac-left{flex:1}
+.action-card .ac-metric{font-weight:700;font-size:.88rem}
+.action-card .ac-sub{font-size:.75rem;color:var(--muted);margin-top:2px}
+.action-card .ac-badge{
+  background:rgba(0,212,170,.2);color:var(--accent2);
+  border-radius:20px;padding:3px 12px;font-size:.78rem;font-weight:800;
+  white-space:nowrap;margin-left:12px;
+}
+.action-card .ac-badge.ac-neg{background:rgba(248,113,113,.15);color:var(--red)}
 
-  /* Sales inputs */
-  .sales-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; }
-  .sales-grid label { font-size: 0.78rem; }
+/* ── Commission ── */
+.comm-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);font-size:.85rem}
+.comm-row:last-child{border-bottom:none}
+.comm-val{font-weight:700}
+.comm-big{font-size:1.4rem}
+.comm-green{color:var(--green)}
+.comm-muted{color:var(--muted)}
+.comm-uplift-box{background:rgba(52,211,153,.1);border:1px solid rgba(52,211,153,.3);border-radius:10px;padding:14px;margin-top:12px;text-align:center}
 
-  /* Tabs */
-  .tabs { display: flex; gap: 4px; margin-bottom: 16px; }
-  .tab {
-    padding: 6px 16px; border-radius: 8px; cursor: pointer; font-size: 0.85rem;
-    border: 1px solid var(--border); background: transparent; color: var(--muted);
-  }
-  .tab.active { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+/* ── Tabs ── */
+.tabs{display:flex;gap:4px;margin-bottom:14px;border-bottom:1px solid var(--border);padding-bottom:12px}
+.tab{padding:7px 16px;border-radius:8px;cursor:pointer;font-size:.82rem;font-weight:600;
+  border:1px solid transparent;color:var(--muted);background:transparent;transition:all .15s}
+.tab:hover{color:var(--text);border-color:var(--border)}
+.tab.active{background:var(--card2);border-color:var(--accent);color:var(--accent)}
+.panel{display:none}
+.panel.active{display:block}
 
-  /* Scrollable panel */
-  .panel { display: none; }
-  .panel.active { display: block; }
+/* ── Misc ── */
+.btn{padding:8px 18px;border-radius:8px;border:1px solid var(--border);
+  background:var(--card2);color:var(--text);font-size:.82rem;font-weight:600;cursor:pointer;transition:all .15s}
+.btn:hover{border-color:var(--accent);background:rgba(124,111,247,.1)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.primary:hover{background:#6a5ee8}
+.btn.danger{background:transparent;border-color:var(--warn);color:var(--warn)}
+.btn.danger:hover{background:rgba(248,113,113,.1)}
+.btn-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.divider{border:none;border-top:1px solid var(--border);margin:14px 0}
+.empty-state{text-align:center;padding:28px;color:var(--muted);font-size:.85rem}
+.tag{display:inline-flex;align-items:center;padding:2px 8px;border-radius:10px;font-size:.72rem;font-weight:700}
+.tag-green{background:rgba(52,211,153,.15);color:var(--green)}
+.tag-yellow{background:rgba(251,191,36,.15);color:var(--yellow)}
+.tag-red{background:rgba(248,113,113,.15);color:var(--red)}
+.tag-blue{background:rgba(124,111,247,.15);color:var(--accent)}
 
-  hr.divider { border: none; border-top: 1px solid var(--border); margin: 16px 0; }
+.stat-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:8px;margin-bottom:14px}
+.stat-box{background:var(--card2);border-radius:10px;padding:12px;text-align:center;border:1px solid var(--border)}
+.stat-val{font-size:1.4rem;font-weight:800;line-height:1}
+.stat-lbl{font-size:.7rem;color:var(--muted);margin-top:4px}
+
+.progress-ring-wrap{display:flex;justify-content:center;margin:8px 0}
+
+.section-note{font-size:.75rem;color:var(--muted);background:rgba(124,111,247,.07);border:1px solid rgba(124,111,247,.15);
+  border-radius:8px;padding:8px 12px;margin-bottom:12px}
 </style>
 </head>
 <body>
+<div class="app">
 
-<h1>Power Rank Calculator</h1>
-<p class="subtitle">Prime Communications · Real-time rank & commission tracker</p>
+<header>
+  <div>
+    <h1>Power Rank Calculator</h1>
+    <div class="subtitle">Prime Communications · Real-time rank & commission tracker</div>
+  </div>
+</header>
 
-<!-- ── TOP ROW: rank display + categories ──────────────────────── -->
-<div class="grid grid-2" style="margin-bottom:16px">
+<div class="main-grid">
 
-  <div class="rank-display" id="rankCard">
-    <div class="rank-number" id="rankNum">—</div>
-    <div class="rank-label">POWER RANK</div>
-    <div class="rank-pts" id="rankPts">— / 100 pts</div>
-    <div class="rank-status" id="rankStatus">Enter your numbers</div>
+<!-- ══ LEFT COLUMN ══════════════════════════════════════════════ -->
+<div>
+
+  <!-- Screenshot Upload -->
+  <div class="card" style="margin-bottom:12px">
+    <div class="card-title">Upload Screenshot</div>
+    <div class="upload-zone" id="uploadZone">
+      <input type="file" id="fileInput" accept="image/*"/>
+      <div class="upload-icon">📸</div>
+      <div class="upload-text"><strong>Click or drag</strong> a screenshot here</div>
+      <div class="upload-text" style="margin-top:4px;font-size:.72rem">Supports PNG, JPG, HEIC — we'll try to read your numbers automatically</div>
+    </div>
+    <div id="previewWrap">
+      <img id="previewImg" src="" alt="Screenshot preview"/>
+      <div class="ocr-bar" id="ocrBar">
+        <div class="ocr-progress"><div class="ocr-fill" id="ocrFill"></div></div>
+        <div class="ocr-status" id="ocrStatus">Scanning…</div>
+      </div>
+      <div class="btn-row" style="margin-top:8px">
+        <button class="btn primary" onclick="runOcr()">🔍 Scan Screenshot</button>
+        <button class="btn" onclick="clearImage()">Clear</button>
+      </div>
+    </div>
+    <div class="section-note" style="margin-top:10px;margin-bottom:0">
+      After scanning, verify each field — OCR may not be perfect. Edit any number and it recalculates instantly.
+    </div>
   </div>
 
+  <!-- Manual Inputs -->
   <div class="card">
-    <h2>Category Breakdown</h2>
-    <div id="catBreakdown"></div>
+    <div class="card-title">Your Metrics</div>
+    <div class="section-note">
+      Sales categories → enter % to goal. &nbsp;Protection / Rate Plan / Next Up → enter your actual attach %.
+    </div>
+    <div id="metricsForm"></div>
+    <div class="btn-row">
+      <button class="btn primary" onclick="recalc()">Calculate</button>
+      <button class="btn danger" onclick="resetAll()">Reset</button>
+    </div>
   </div>
 
 </div>
 
-<!-- ── TABS ────────────────────────────────────────────────────── -->
-<div class="tabs">
-  <button class="tab active" onclick="showTab('inputs')">Manual Input</button>
-  <button class="tab" onclick="showTab('whatif')">What-If</button>
-  <button class="tab" onclick="showTab('path')">Path to 9.0</button>
-  <button class="tab" onclick="showTab('commission')">Commission</button>
-</div>
+<!-- ══ RIGHT COLUMN ═════════════════════════════════════════════ -->
+<div>
 
-<!-- ── PANEL: Manual Input ───────────────────────────────────────── -->
-<div class="panel active card" id="tab-inputs">
-  <h2>Enter Your Metrics</h2>
-  <p style="font-size:.82rem;color:var(--muted);margin-bottom:14px">
-    Sales categories: enter % to goal. &nbsp;Attach-rate categories (Protection / Rate Plan / Next Up): enter actual % attainment.
-  </p>
-  <div class="input-grid" id="inputGrid"></div>
-  <div class="btn-row">
-    <button class="primary" onclick="recalc()">Calculate</button>
-    <button class="reset" onclick="resetAll()">Reset</button>
+  <!-- Rank Hero -->
+  <div class="rank-hero" id="rankHero">
+    <div class="rank-number" id="rankNum" style="color:var(--accent)">—<span class="rank-max" style="color:var(--accent)">/10</span></div>
+    <div class="rank-label">Power Rank</div>
+    <div class="rank-pts" id="rankPts"><strong>—</strong> / 100 pts</div>
+    <div id="rankBadge" class="rank-badge badge-ok">Enter your metrics to begin</div>
   </div>
-</div>
 
-<!-- ── PANEL: What-If ───────────────────────────────────────────── -->
-<div class="panel card" id="tab-whatif">
-  <h2>What-If Simulator</h2>
-  <p style="font-size:.82rem;color:var(--muted);margin-bottom:14px">
-    See how individual metric moves affect your rank without changing your saved inputs.
-  </p>
-  <div class="input-grid" id="whatifGrid"></div>
-  <div class="btn-row">
-    <button class="primary" onclick="runWhatIf()">Simulate</button>
-    <button onclick="resetWhatIf()">Clear overrides</button>
+  <!-- Category breakdown (always visible) -->
+  <div class="card" style="margin-bottom:12px">
+    <div class="card-title">Category Breakdown</div>
+    <table class="cat-table" id="catTable"><tbody id="catBody"></tbody></table>
   </div>
-  <div id="whatifResult" style="margin-top:16px"></div>
-</div>
 
-<!-- ── PANEL: Path to rank ──────────────────────────────────────── -->
-<div class="panel card" id="tab-path">
-  <h2>Path to Target Rank</h2>
-  <div class="btn-row" style="margin-bottom:16px">
-    <button onclick="showPath(8.0)" class="primary">Path to 8.0</button>
-    <button onclick="showPath(8.5)">Path to 8.5</button>
-    <button onclick="showPath(9.0)">Path to 9.0</button>
-    <button onclick="showPath(9.5)">Path to 9.5</button>
-  </div>
-  <div id="pathResult"></div>
-</div>
+  <!-- Tabs: Path / Commission / What-If -->
+  <div class="card">
+    <div class="tabs">
+      <button class="tab active" onclick="showTab('path')">Path to Rank</button>
+      <button class="tab" onclick="showTab('commission')">Commission</button>
+      <button class="tab" onclick="showTab('whatif')">What-If</button>
+    </div>
 
-<!-- ── PANEL: Commission ─────────────────────────────────────────── -->
-<div class="panel card" id="tab-commission">
-  <h2>Commission Projection</h2>
-  <p style="font-size:.82rem;color:var(--muted);margin-bottom:14px">
-    Enter MTD sales counts. The calculator shows your pay at your current rank vs. rank 9.
-  </p>
-  <div class="sales-grid" id="salesGrid"></div>
-  <div class="btn-row"><button class="primary" onclick="calcCommission()">Project Commission</button></div>
-  <div id="commResult" style="margin-top:16px"></div>
-</div>
+    <!-- PATH TO RANK -->
+    <div class="panel active" id="tab-path">
+      <div class="card-title">Select target rank</div>
+      <div class="rank-btns" id="rankBtns"></div>
+      <div id="pathResult"><div class="empty-state">Enter your metrics, then pick a target rank.</div></div>
+    </div>
 
-<!-- ── JS ───────────────────────────────────────────────────────── -->
+    <!-- COMMISSION -->
+    <div class="panel" id="tab-commission">
+      <div class="card-title">MTD Sales (enter counts)</div>
+      <div class="section-note">
+        Fill in your month-to-date sale counts. Calculator shows your pay at current rank vs. rank 9 vs. rank 10.
+      </div>
+      <div class="input-grid-2" id="salesForm"></div>
+      <div class="btn-row">
+        <button class="btn primary" onclick="calcCommission()">Project Commission</button>
+      </div>
+      <div id="commResult" style="margin-top:14px"></div>
+    </div>
+
+    <!-- WHAT-IF -->
+    <div class="panel" id="tab-whatif">
+      <div class="card-title">Override any metric to see impact</div>
+      <div class="section-note">Simulates rank change without altering your saved inputs.</div>
+      <div id="whatifForm"></div>
+      <div class="btn-row">
+        <button class="btn primary" onclick="runWhatIf()">Simulate</button>
+        <button class="btn" onclick="clearWhatIf()">Clear overrides</button>
+      </div>
+      <div id="whatifResult" style="margin-top:14px"></div>
+    </div>
+
+  </div><!-- /right card -->
+</div><!-- /right col -->
+</div><!-- /main-grid -->
+</div><!-- /app -->
+
+<!-- Tesseract.js (loaded lazily when user uploads) -->
 <script>
-// ── Scoring engine (inline) ───────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════
+//  SCORING ENGINE
+// ═══════════════════════════════════════════════════════
 
-const METRIC_MAX_POINTS = {
-  opps:15, ppvga:35, fiber:15, aia:10, accessories:10,
-  protection:5, rate_plan:5, next_up:5,
+const METRIC_CFG = [
+  {id:'opps',       label:'Opps',         max:15, attach:false, hint:'% to goal'},
+  {id:'ppvga',      label:'PPVGA',        max:35, attach:false, hint:'% to goal'},
+  {id:'fiber',      label:'Fiber',        max:15, attach:false, hint:'% to goal'},
+  {id:'aia',        label:'AIA',          max:10, attach:false, hint:'% to goal'},
+  {id:'accessories',label:'Accessories',  max:10, attach:false, hint:'% to goal'},
+  {id:'protection', label:'Protection',   max:5,  attach:true,  hint:'attach %'},
+  {id:'rate_plan',  label:'Rate Plan %',  max:5,  attach:true,  hint:'attach %'},
+  {id:'next_up',    label:'Next Up',      max:5,  attach:true,  hint:'attach %'},
+];
+
+const SALES_MUL = {125:1.0,100:0.9,90:0.8,80:0.7,70:0.6,60:0.5,50:0.4,40:0.3,30:0.2,20:0.1,0:0};
+const SALES_THR = Object.keys(SALES_MUL).map(Number).sort((a,b)=>b-a);
+
+const PROT_TBL  = [[70,5],[68,4.5],[66,4],[63,3.5],[60,3]];
+const RPLAN_TBL = [[82,5],[80,4.5],[78,4],[76,3.5],[74,3]];
+const NUP_TBL   = [[80,5],[78,4.5],[76,4],[74,3.5],[72,3]];
+const ATTACH_TBL= {protection:PROT_TBL, rate_plan:RPLAN_TBL, next_up:NUP_TBL};
+
+const COMM_TIERS = {
+  rank_8: {nv_premium:35,nv_extra:25,nv_starter:15,fiber_aia:50,upgrade:5,acc_pct:0.06,pa1:3,pa4:6,htp:6},
+  rank_9: {nv_premium:70,nv_extra:50,nv_starter:25,fiber_aia:60,upgrade:5,acc_pct:0.07,pa1:4,pa4:10,htp:10},
+  rank_10:{nv_premium:90,nv_extra:65,nv_starter:35,fiber_aia:75,upgrade:5,acc_pct:0.08,pa1:5,pa4:13,htp:13},
 };
 
-const SALES_MULTIPLIERS = {
-  125:1.0, 100:0.9, 90:0.8, 80:0.7,
-  70:0.6, 60:0.5, 50:0.4, 40:0.3, 30:0.2, 20:0.1, 0:0.0,
-};
-const SALES_THRESHOLDS = Object.keys(SALES_MULTIPLIERS).map(Number).sort((a,b)=>b-a);
+const SALES_CFG = [
+  {id:'nv_premium', label:'New Voice Premium',      unit:'count'},
+  {id:'nv_extra',   label:'New Voice Extra',         unit:'count'},
+  {id:'nv_starter', label:'New Voice Starter',       unit:'count'},
+  {id:'fiber_aia',  label:'Fiber / AIA Sales',       unit:'count'},
+  {id:'upgrade',    label:'Voice Upgrades',           unit:'count'},
+  {id:'acc_rev',    label:'Accessories Revenue',      unit:'$'},
+  {id:'pa1',        label:'PA1',                      unit:'count'},
+  {id:'pa4',        label:'PA4',                      unit:'count'},
+  {id:'htp',        label:'HTP',                      unit:'count'},
+];
 
-const PROTECTION_TABLE = [[70,5],[68,4.5],[66,4],[63,3.5],[60,3]];
-const RATE_PLAN_TABLE  = [[82,5],[80,4.5],[78,4],[76,3.5],[74,3]];
-const NEXT_UP_TABLE    = [[80,5],[78,4.5],[76,4],[74,3.5],[72,3]];
-const ATTACH_TABLES    = { protection:PROTECTION_TABLE, rate_plan:RATE_PLAN_TABLE, next_up:NEXT_UP_TABLE };
-
-const COMMISSION_TIERS = {
-  rank_8: { new_voice_premium:35, new_voice_extra:25, new_voice_starter:15, fiber_aia:50, voice_upgrade:5, accessories_pct:0.06, pa1:3, pa4:6, htp:6 },
-  rank_9: { new_voice_premium:70, new_voice_extra:50, new_voice_starter:25, fiber_aia:60, voice_upgrade:5, accessories_pct:0.07, pa1:4, pa4:10, htp:10 },
-};
-
-function percentToPoints(metric, percent) {
-  if (percent === null || isNaN(percent)) return 0;
-  const table = ATTACH_TABLES[metric];
-  if (table) {
-    for (const [t,p] of table) if (percent >= t) return p;
-    return 0;
-  }
-  const maxPts = METRIC_MAX_POINTS[metric];
-  if (maxPts === undefined) return 0;
-  for (const t of SALES_THRESHOLDS)
-    if (percent >= t) return Math.round(maxPts * SALES_MULTIPLIERS[t] * 100) / 100;
+function p2p(id, pct) {
+  if (pct === null || isNaN(pct)) return 0;
+  const tbl = ATTACH_TBL[id];
+  if (tbl) { for (const [t,p] of tbl) if (pct >= t) return p; return 0; }
+  const cfg = METRIC_CFG.find(m=>m.id===id); if (!cfg) return 0;
+  for (const t of SALES_THR) if (pct >= t) return Math.round(cfg.max*SALES_MUL[t]*100)/100;
   return 0;
 }
 
 function computeAll(metrics) {
-  const pts = {};
-  for (const m of Object.keys(METRIC_MAX_POINTS)) pts[m] = percentToPoints(m, metrics[m] ?? 0);
-  const total = Math.round(Object.values(pts).reduce((s,v)=>s+v,0)*100)/100;
-  const rank  = Math.round(total/10*100)/100;
-  return { pts, total, rank };
-}
-
-function pathToRank(metrics, targetRank) {
-  const { pts:curPts, total:curTotal, rank:curRk } = computeAll(metrics);
-  const targetTotal = targetRank * 10;
-  const candidates = [];
-  for (const m of Object.keys(METRIC_MAX_POINTS)) {
-    const curPct = metrics[m] || 0;
-    const curPt  = percentToPoints(m, curPct);
-    const maxPt  = percentToPoints(m, 125);
-    const gain   = Math.round((maxPt - curPt)*100)/100;
-    if (gain > 0) candidates.push({metric:m, current_pct:curPct, max_gain:gain});
+  let total=0;
+  const pts={};
+  for (const m of METRIC_CFG) {
+    const v=metrics[m.id]??0;
+    pts[m.id]=p2p(m.id,v);
+    total+=pts[m.id];
   }
-  candidates.sort((a,b)=>b.max_gain-a.max_gain);
-  const actions = [];
-  let projected = curTotal;
-  for (const c of candidates) {
-    if (projected >= targetTotal) break;
-    actions.push({metric:c.metric, current_pct:c.current_pct, points_added:c.max_gain});
-    projected = Math.round((projected+c.max_gain)*100)/100;
+  total=Math.round(total*100)/100;
+  const rank=Math.round(total/10*100)/100;
+  return {pts,total,rank};
+}
+
+function pathToRank(metrics,targetRank) {
+  const {pts:curPts,total:curTotal,rank:curRk}=computeAll(metrics);
+  const targetTotal=targetRank*10;
+  const needed=Math.max(0,Math.round((targetTotal-curTotal)*100)/100);
+  const cands=[];
+  for (const m of METRIC_CFG) {
+    const curPct=metrics[m.id]||0;
+    const curPt=p2p(m.id,curPct);
+    const maxPt=p2p(m.id,125);
+    const gain=Math.round((maxPt-curPt)*100)/100;
+    if(gain>0) cands.push({id:m.id,label:m.label,curPct,curPt,maxPt,gain});
   }
-  return { current_rank:curRk, current_points:curTotal, target_rank:targetRank,
-           target_points:targetTotal, needed_points:Math.max(0,Math.round((targetTotal-curTotal)*100)/100),
-           recommended_actions:actions, projected_points:projected, projected_rank:Math.round(projected/10*100)/100 };
+  cands.sort((a,b)=>b.gain-a.gain);
+  const actions=[]; let proj=curTotal;
+  for (const c of cands) {
+    if(proj>=targetTotal) break;
+    actions.push({...c});
+    proj=Math.round((proj+c.gain)*100)/100;
+  }
+  return {curRk,curTotal,targetRank,targetTotal,needed,actions,proj,projRank:Math.round(proj/10*100)/100};
 }
 
-function calcCommPayout(sales, tierKey) {
-  const r = COMMISSION_TIERS[tierKey];
-  return Math.round(( (sales.new_voice_premium||0)*r.new_voice_premium
-    + (sales.new_voice_extra||0)*r.new_voice_extra
-    + (sales.new_voice_starter||0)*r.new_voice_starter
-    + (sales.fiber_aia||0)*r.fiber_aia
-    + (sales.voice_upgrade||0)*r.voice_upgrade
-    + (sales.accessories_revenue||0)*r.accessories_pct
-    + (sales.pa1||0)*r.pa1
-    + (sales.pa4||0)*r.pa4
-    + (sales.htp||0)*r.htp )*100)/100;
+function calcPay(sales,tierKey) {
+  const r=COMM_TIERS[tierKey]||COMM_TIERS.rank_8;
+  return Math.round((
+    (sales.nv_premium||0)*r.nv_premium+
+    (sales.nv_extra||0)*r.nv_extra+
+    (sales.nv_starter||0)*r.nv_starter+
+    (sales.fiber_aia||0)*r.fiber_aia+
+    (sales.upgrade||0)*r.upgrade+
+    (sales.acc_rev||0)*r.acc_pct+
+    (sales.pa1||0)*r.pa1+
+    (sales.pa4||0)*r.pa4+
+    (sales.htp||0)*r.htp
+  )*100)/100;
 }
 
-// ── UI state ──────────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════════════════════
 
-const METRIC_LABELS = {
-  opps:'Opps', ppvga:'PPVGA', fiber:'Fiber', aia:'AIA',
-  accessories:'Accessories', protection:'Protection', rate_plan:'Rate Plan %', next_up:'Next Up',
-};
-const ATTACH_METRICS = new Set(['protection','rate_plan','next_up']);
+let state={}; // metric id → percent value
+let targetRank=9.0;
+let uploadedImg=null;
 
-const SALES_LABELS = {
-  new_voice_premium:'New Voice Premium', new_voice_extra:'New Voice Extra',
-  new_voice_starter:'New Voice Starter', fiber_aia:'Fiber / AIA Sales',
-  voice_upgrade:'Voice Upgrades', accessories_revenue:'Accessories Revenue ($)',
-  pa1:'PA1', pa4:'PA4', htp:'HTP',
-};
+// ═══════════════════════════════════════════════════════
+//  UI BUILDERS
+// ═══════════════════════════════════════════════════════
 
-let state = {}; // metric → percent
-
-// ── Build input grids ─────────────────────────────────────────────────────────
-
-function buildInputGrid(containerId, onInput) {
-  const el = document.getElementById(containerId);
-  el.innerHTML = '';
-  for (const [m, label] of Object.entries(METRIC_LABELS)) {
-    const hint = ATTACH_METRICS.has(m) ? 'attach %' : '% to goal';
-    const div = document.createElement('div');
-    div.className = 'input-group';
-    div.innerHTML = `
-      <label>${label} <span style="color:var(--muted);font-size:.75rem">(${hint})</span></label>
-      <input type="number" id="${containerId}_${m}" min="0" max="300" step="0.1"
-             placeholder="0" oninput="${onInput}()" />
-      <span class="unit">%</span>`;
+function buildMetricsForm() {
+  const el=document.getElementById('metricsForm');
+  el.innerHTML='';
+  for (const m of METRIC_CFG) {
+    const div=document.createElement('div');
+    div.className='field';
+    div.innerHTML=`
+      <label>${m.label} <span class="field-hint">${m.hint} · max ${m.max} pts</span></label>
+      <div class="input-wrap">
+        <input type="number" id="inp_${m.id}" min="0" max="300" step="0.1"
+               placeholder="${m.attach?'0–100':'0–300'}" oninput="onMetricInput('${m.id}',this.value)"/>
+        <span class="suffix">%</span>
+        <span class="pts-badge" id="pb_${m.id}" style="color:var(--muted)">0 / ${m.max}</span>
+      </div>`;
     el.appendChild(div);
   }
 }
 
-function buildSalesGrid() {
-  const el = document.getElementById('salesGrid');
-  el.innerHTML = '';
-  for (const [k, label] of Object.entries(SALES_LABELS)) {
-    const div = document.createElement('div');
-    div.className = 'input-group';
-    div.innerHTML = `
-      <label>${label}</label>
-      <input type="number" id="sales_${k}" min="0" step="0.01" placeholder="0" />`;
+function buildWhatIfForm() {
+  const el=document.getElementById('whatifForm');
+  el.innerHTML='';
+  const grid=document.createElement('div');
+  grid.className='input-grid-2';
+  for (const m of METRIC_CFG) {
+    const div=document.createElement('div');
+    div.className='field';
+    div.innerHTML=`
+      <label>${m.label}</label>
+      <div class="input-wrap">
+        <input type="number" id="wi_${m.id}" min="0" max="300" step="0.1" placeholder="—"/>
+        <span class="suffix">%</span>
+      </div>`;
+    grid.appendChild(div);
+  }
+  el.appendChild(grid);
+}
+
+function buildSalesForm() {
+  const el=document.getElementById('salesForm');
+  el.innerHTML='';
+  for (const s of SALES_CFG) {
+    const div=document.createElement('div');
+    div.className='field';
+    div.innerHTML=`
+      <label>${s.label}</label>
+      <div class="input-wrap">
+        <input type="number" id="sale_${s.id}" min="0" step="${s.unit==='$'?'0.01':'1'}" placeholder="0"/>
+        <span class="suffix">${s.unit}</span>
+      </div>`;
     el.appendChild(div);
   }
 }
 
-buildInputGrid('inputGrid', 'onMainInput');
-buildInputGrid('whatifGrid', 'noop');
-buildSalesGrid();
+function buildRankBtns() {
+  const el=document.getElementById('rankBtns');
+  [8.0,8.5,9.0,9.5,10.0].forEach(r=>{
+    const b=document.createElement('button');
+    b.className='rank-btn'+(r===targetRank?' active':'');
+    b.textContent=r.toFixed(1);
+    b.onclick=()=>{
+      targetRank=r;
+      document.querySelectorAll('.rank-btn').forEach(x=>x.classList.remove('active'));
+      b.classList.add('active');
+      refreshPath();
+    };
+    el.appendChild(b);
+  });
+}
 
-function noop() {}
-
-// ── Read helpers ──────────────────────────────────────────────────────────────
-
-function readMetrics(prefix) {
-  const m = {};
-  for (const k of Object.keys(METRIC_LABELS)) {
-    const v = parseFloat(document.getElementById(`${prefix}_${k}`)?.value);
-    if (!isNaN(v)) m[k] = v;
+function buildCatTable() {
+  const tb=document.getElementById('catBody');
+  tb.innerHTML='';
+  for (const m of METRIC_CFG) {
+    const tr=document.createElement('tr');
+    tr.innerHTML=`
+      <td class="cat-name">${m.label}</td>
+      <td style="width:100%"><div class="cat-bar-wrap"><div class="cat-bar" id="bar_${m.id}" style="width:0%;background:var(--accent)"></div></div></td>
+      <td class="cat-pts-val" id="cpv_${m.id}" style="color:var(--muted)">0</td>
+      <td class="cat-pts-max">/ ${m.max}</td>`;
+    tb.appendChild(tr);
   }
-  return m;
 }
 
-function readSales() {
-  const s = {};
-  for (const k of Object.keys(SALES_LABELS)) {
-    const v = parseFloat(document.getElementById(`sales_${k}`)?.value);
-    if (!isNaN(v)) s[k] = v;
+// ═══════════════════════════════════════════════════════
+//  RECALC & UI UPDATE
+// ═══════════════════════════════════════════════════════
+
+function onMetricInput(id,val) {
+  const v=parseFloat(val);
+  if(!isNaN(v)&&val!=='') state[id]=v; else delete state[id];
+  updateUI();
+}
+
+function recalc() {
+  for (const m of METRIC_CFG) {
+    const el=document.getElementById('inp_'+m.id);
+    const v=parseFloat(el?.value);
+    if(!isNaN(v)&&el?.value!=='') state[m.id]=v; else delete state[m.id];
   }
-  return s;
+  updateUI();
 }
-
-// ── Colour helpers ────────────────────────────────────────────────────────────
-
-function barColor(pct) {
-  if (pct >= 100) return '#48bb78';
-  if (pct >= 70)  return '#6c63ff';
-  if (pct >= 50)  return '#ecc94b';
-  return '#fc8181';
-}
-
-function rankColor(rank) {
-  if (rank >= 9.0) return 'var(--green)';
-  if (rank >= 8.0) return 'var(--accent2)';
-  if (rank >= 7.0) return 'var(--yellow)';
-  return 'var(--red)';
-}
-
-// ── Main recalc ───────────────────────────────────────────────────────────────
-
-function onMainInput() { state = readMetrics('inputGrid'); updateUI(); }
-
-function recalc() { state = readMetrics('inputGrid'); updateUI(); }
 
 function updateUI() {
-  const { pts, total, rank } = computeAll(state);
+  const {pts,total,rank}=computeAll(state);
 
-  // Rank card
-  document.getElementById('rankNum').textContent = rank.toFixed(1);
-  document.getElementById('rankNum').style.background = rankColor(rank);
-  document.getElementById('rankNum').style.webkitBackgroundClip = 'unset';
-  document.getElementById('rankNum').style.webkitTextFillColor = rankColor(rank);
-  document.getElementById('rankPts').textContent = `${total.toFixed(2)} / 100 pts`;
+  // Rank hero
+  const col=rank>=9.5?'var(--green)':rank>=8.5?'var(--accent2)':rank>=8?'var(--yellow)':rank>0?'var(--red)':'var(--accent)';
+  document.getElementById('rankNum').innerHTML=`<span style="color:${col}">${rank>0?rank.toFixed(1):'—'}</span><span class="rank-max" style="color:${col};opacity:.35">/10</span>`;
+  document.getElementById('rankPts').innerHTML=`<strong>${total>0?total.toFixed(2):'—'}</strong> / 100 pts`;
 
-  const statusEl = document.getElementById('rankStatus');
-  if (rank >= 9.0) {
-    statusEl.textContent = 'Rank 9 — Maximum tier';
-    statusEl.className = 'rank-status status-good';
-  } else if (rank >= 8.5) {
-    statusEl.textContent = 'Strong — push for 9.0';
-    statusEl.className = 'rank-status status-good';
-  } else if (rank >= 8.0) {
-    statusEl.textContent = 'At 8.0 — build cushion';
-    statusEl.className = 'rank-status status-warning';
-  } else if (rank > 0) {
-    statusEl.textContent = 'Below 8.0 — take action';
-    statusEl.className = 'rank-status status-danger';
-  } else {
-    statusEl.textContent = 'Enter your numbers';
-    statusEl.className = 'rank-status status-warning';
+  const badge=document.getElementById('rankBadge');
+  if(rank>=10){badge.textContent='🏆 Perfect Score — Rank 10!';badge.className='rank-badge badge-great';}
+  else if(rank>=9.5){badge.textContent='🔥 Elite — push for 10.0';badge.className='rank-badge badge-great';}
+  else if(rank>=9.0){badge.textContent='⚡ Rank 9 — great position';badge.className='rank-badge badge-good';}
+  else if(rank>=8.5){badge.textContent='👍 Strong — one push from 9';badge.className='rank-badge badge-ok';}
+  else if(rank>=8.0){badge.textContent='⚠️ At 8.0 — build cushion now';badge.className='rank-badge badge-ok';}
+  else if(rank>0){badge.textContent='🚨 Below 8.0 — take action today';badge.className='rank-badge badge-danger';}
+  else{badge.textContent='Enter your metrics to begin';badge.className='rank-badge badge-ok';}
+
+  // Per-metric badges & bars
+  for (const m of METRIC_CFG) {
+    const pct=state[m.id]||0;
+    const p=pts[m.id]||0;
+    const barPct=Math.min(100,(p/m.max)*100);
+    const barCol=pct>=100?'var(--green)':pct>=70?'var(--accent)':pct>=50?'var(--yellow)':'var(--red)';
+    const bar=document.getElementById('bar_'+m.id);
+    if(bar){bar.style.width=barPct+'%';bar.style.background=barCol;}
+    const cpv=document.getElementById('cpv_'+m.id);
+    if(cpv){cpv.textContent=p%1===0?p:p.toFixed(1);cpv.style.color=barCol;}
+    const pb=document.getElementById('pb_'+m.id);
+    if(pb){pb.textContent=`${p%1===0?p:p.toFixed(1)} / ${m.max}`;pb.style.color=p>=m.max?'var(--green)':p>0?'var(--accent2)':'var(--muted)';}
   }
 
-  // Category breakdown
-  const cb = document.getElementById('catBreakdown');
-  cb.innerHTML = '';
-  for (const [m, maxP] of Object.entries(METRIC_MAX_POINTS)) {
-    const pct   = state[m] || 0;
-    const p     = pts[m]   || 0;
-    const barW  = Math.min(100, (p / maxP) * 100);
-    const color = barColor(pct);
-    cb.innerHTML += `
-      <div class="cat-row">
-        <div class="cat-name">${METRIC_LABELS[m]}</div>
-        <div class="cat-bar-wrap">
-          <div class="cat-bar" style="width:${barW}%;background:${color}"></div>
-        </div>
-        <div class="cat-pts" style="color:${color}">${p.toFixed(1)}</div>
-        <div class="cat-max">/ ${maxP}</div>
-      </div>`;
-  }
+  refreshPath();
 }
 
-// ── What-if ───────────────────────────────────────────────────────────────────
+function refreshPath() {
+  const {curRk,curTotal,needed,actions,proj,projRank}=pathToRank(state,targetRank);
+  const el=document.getElementById('pathResult');
+  if(!Object.keys(state).length){el.innerHTML='<div class="empty-state">Enter your metrics, then pick a target rank.</div>';return;}
 
-function runWhatIf() {
-  const overrides = readMetrics('whatifGrid');
-  const base      = { ...state };
-  const changes   = {};
-  for (const [k,v] of Object.entries(overrides)) { if (!isNaN(v)) changes[k] = v; }
-  if (!Object.keys(changes).length) { document.getElementById('whatifResult').innerHTML='<p style="color:var(--muted)">Enter at least one override value.</p>'; return; }
-
-  const beforeR        = computeAll(base);
-  const afterMetrics   = { ...base, ...changes };
-  const afterR         = computeAll(afterMetrics);
-  const rankDelta      = Math.round((afterR.rank - beforeR.rank)*100)/100;
-  const ptsDelta       = Math.round((afterR.total - beforeR.total)*100)/100;
-  const sign           = d => d > 0 ? `+${d}` : `${d}`;
-  const col            = d => d > 0 ? 'var(--green)' : d < 0 ? 'var(--red)' : 'var(--muted)';
-
-  let html = `
-    <div style="display:flex;gap:20px;flex-wrap:wrap;margin-bottom:12px">
-      <div class="card" style="flex:1;min-width:140px;text-align:center">
-        <div style="color:var(--muted);font-size:.8rem">Before</div>
-        <div style="font-size:2rem;font-weight:800;color:var(--accent)">${beforeR.rank.toFixed(1)}</div>
-        <div style="font-size:.85rem">${beforeR.total.toFixed(2)} pts</div>
-      </div>
-      <div class="card" style="flex:1;min-width:140px;text-align:center">
-        <div style="color:var(--muted);font-size:.8rem">After</div>
-        <div style="font-size:2rem;font-weight:800;color:${rankDelta>=0?'var(--green)':'var(--red)'}">${afterR.rank.toFixed(1)}</div>
-        <div style="font-size:.85rem">${afterR.total.toFixed(2)} pts</div>
-      </div>
-      <div class="card" style="flex:1;min-width:140px;text-align:center">
-        <div style="color:var(--muted);font-size:.8rem">Change</div>
-        <div style="font-size:2rem;font-weight:800;color:${col(rankDelta)}">${sign(rankDelta)}</div>
-        <div style="font-size:.85rem;color:${col(ptsDelta)}">${sign(ptsDelta)} pts</div>
-      </div>
-    </div>`;
-
-  // per-category
-  html += '<div style="font-size:.85rem">';
-  for (const m of Object.keys(METRIC_MAX_POINTS)) {
-    const delta = Math.round(((afterR.pts[m]||0)-(beforeR.pts[m]||0))*100)/100;
-    if (delta !== 0) {
-      html += `<div class="comm-row"><span>${METRIC_LABELS[m]}</span><span style="color:${col(delta)};font-weight:700">${sign(delta)} pts</span></div>`;
-    }
-  }
-  html += '</div>';
-  document.getElementById('whatifResult').innerHTML = html;
-}
-
-function resetWhatIf() {
-  for (const k of Object.keys(METRIC_LABELS)) {
-    const el = document.getElementById(`whatifGrid_${k}`);
-    if (el) el.value = '';
-  }
-  document.getElementById('whatifResult').innerHTML = '';
-}
-
-// ── Path to rank ──────────────────────────────────────────────────────────────
-
-function showPath(targetRank) {
-  const result = pathToRank(state, targetRank);
-  const el     = document.getElementById('pathResult');
-
-  if (result.needed_points <= 0) {
-    el.innerHTML = `<p style="color:var(--green);font-weight:600">You already meet rank ${targetRank} with ${result.current_points} pts (rank ${result.current_rank}).</p>`;
+  if(needed<=0){
+    el.innerHTML=`<div class="action-card" style="background:rgba(52,211,153,.08);border-color:rgba(52,211,153,.3)">
+      <div class="ac-left"><div class="ac-metric" style="color:var(--green)">✅ You already hit rank ${targetRank.toFixed(1)}!</div>
+      <div class="ac-sub">Current rank: ${curRk.toFixed(1)} · ${curTotal.toFixed(2)} pts</div></div></div>`;
     return;
   }
 
-  let html = `
-    <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:16px">
-      <div class="card" style="flex:1;min-width:120px;text-align:center">
-        <div style="color:var(--muted);font-size:.8rem">Current</div>
-        <div style="font-size:1.8rem;font-weight:800;color:var(--accent)">${result.current_rank.toFixed(1)}</div>
-        <div style="font-size:.82rem">${result.current_points} pts</div>
-      </div>
-      <div class="card" style="flex:1;min-width:120px;text-align:center">
-        <div style="color:var(--muted);font-size:.8rem">Need</div>
-        <div style="font-size:1.8rem;font-weight:800;color:var(--warn)">+${result.needed_points}</div>
-        <div style="font-size:.82rem">points</div>
-      </div>
-      <div class="card" style="flex:1;min-width:120px;text-align:center">
-        <div style="color:var(--muted);font-size:.8rem">Projected</div>
-        <div style="font-size:1.8rem;font-weight:800;color:var(--green)">${result.projected_rank.toFixed(1)}</div>
-        <div style="font-size:.82rem">${result.projected_points} pts</div>
-      </div>
-    </div>
-    <h2 style="margin-bottom:10px">Recommended moves</h2>`;
+  let html=`<div class="stat-row">
+    <div class="stat-box"><div class="stat-val" style="color:var(--accent)">${curRk.toFixed(1)}</div><div class="stat-lbl">Current rank</div></div>
+    <div class="stat-box"><div class="stat-val" style="color:var(--warn)">+${needed.toFixed(1)}</div><div class="stat-lbl">Pts needed</div></div>
+    <div class="stat-box"><div class="stat-val" style="color:var(--green)">${projRank.toFixed(1)}</div><div class="stat-lbl">If you do these moves</div></div>
+  </div>
+  <div class="card-title">Recommended moves</div>`;
 
-  for (const a of result.recommended_actions) {
-    html += `
-      <div class="action-item">
-        <div>
-          <div style="font-weight:600">${METRIC_LABELS[a.metric]}</div>
-          <div style="font-size:.8rem;color:var(--muted)">currently ${a.current_pct.toFixed(1)}% → max out</div>
-        </div>
-        <span class="badge">+${a.points_added} pts</span>
-      </div>`;
+  for (const [i,a] of actions.entries()) {
+    const step=i+1;
+    html+=`<div class="action-card">
+      <div class="ac-left">
+        <div class="ac-metric">${step}. ${a.label}</div>
+        <div class="ac-sub">Currently ${a.curPct.toFixed(1)}% → max out (${a.maxPt} pts)</div>
+      </div>
+      <span class="ac-badge">+${a.gain} pts</span>
+    </div>`;
   }
-  el.innerHTML = html;
+
+  const gap=Math.max(0,Math.round((targetRank*10-proj)*100)/100);
+  if(gap>0) html+=`<div style="font-size:.78rem;color:var(--muted);margin-top:8px;text-align:center">Even after these moves, gap to ${targetRank.toFixed(1)} is <strong>${gap} pts</strong> — focus on Fiber or PPVGA first.</div>`;
+
+  el.innerHTML=html;
 }
 
-// ── Commission ────────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════
+//  COMMISSION
+// ═══════════════════════════════════════════════════════
+
+function readSales() {
+  const s={};
+  for (const c of SALES_CFG) { const v=parseFloat(document.getElementById('sale_'+c.id)?.value); if(!isNaN(v)) s[c.id]=v; }
+  return s;
+}
 
 function calcCommission() {
-  const sales    = readSales();
-  const { rank } = computeAll(state);
-  const tierKey  = rank >= 9.0 ? 'rank_9' : 'rank_8';
-  const curPay   = calcCommPayout(sales, tierKey);
-  const r9Pay    = calcCommPayout(sales, 'rank_9');
-  const uplift   = Math.round((r9Pay - curPay)*100)/100;
+  const sales=readSales();
+  const {rank}=computeAll(state);
+  const tierKey=rank>=10?'rank_10':rank>=9?'rank_9':'rank_8';
+  const cur=calcPay(sales,tierKey);
+  const r9=calcPay(sales,'rank_9');
+  const r10=calcPay(sales,'rank_10');
+  const fmt=v=>'$'+v.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
 
-  const fmt = v => '$' + v.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
-
-  document.getElementById('commResult').innerHTML = `
-    <div class="card" style="margin-top:0">
-      <div class="comm-row">
-        <span>Current rank</span>
-        <span class="comm-val">${rank.toFixed(1)} (${tierKey.replace('_',' ')})</span>
-      </div>
-      <div class="comm-row">
-        <span>Pay at current rank</span>
-        <span class="comm-val">${fmt(curPay)}</span>
-      </div>
-      <div class="comm-row">
-        <span>Pay at rank 9</span>
-        <span class="comm-val">${fmt(r9Pay)}</span>
-      </div>
-      <div class="comm-row">
-        <span>Rank 9 uplift</span>
-        <span class="comm-val uplift">+${fmt(uplift)}</span>
-      </div>
+  const el=document.getElementById('commResult');
+  el.innerHTML=`
+    <div class="stat-row" style="grid-template-columns:1fr 1fr 1fr">
+      <div class="stat-box"><div class="stat-val" style="color:var(--accent)">${fmt(cur)}</div><div class="stat-lbl">Current (rank ${rank.toFixed(1)})</div></div>
+      <div class="stat-box"><div class="stat-val" style="color:var(--accent2)">${fmt(r9)}</div><div class="stat-lbl">At rank 9.0</div></div>
+      <div class="stat-box"><div class="stat-val" style="color:var(--gold)">${fmt(r10)}</div><div class="stat-lbl">At rank 10.0</div></div>
+    </div>
+    <div class="comm-uplift-box">
+      <div style="font-size:.78rem;color:var(--muted);margin-bottom:4px">Uplift if you hit rank 9 with same sales</div>
+      <div class="comm-big comm-green">${fmt(r9-cur)} more</div>
+    </div>
+    <div style="margin-top:12px">
+      <div class="comm-row"><span>Pay at current rank</span><span class="comm-val">${fmt(cur)}</span></div>
+      <div class="comm-row"><span>Pay at rank 9</span><span class="comm-val comm-green">${fmt(r9)}</span></div>
+      <div class="comm-row"><span>Pay at rank 10 (max)</span><span class="comm-val" style="color:var(--gold)">${fmt(r10)}</span></div>
+      <div class="comm-row"><span>Rank 9 uplift vs current</span><span class="comm-val comm-green">+${fmt(r9-cur)}</span></div>
+      <div class="comm-row"><span>Rank 10 uplift vs current</span><span class="comm-val" style="color:var(--gold)">+${fmt(r10-cur)}</span></div>
     </div>`;
 }
 
-// ── Reset ─────────────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════
+//  WHAT-IF
+// ═══════════════════════════════════════════════════════
+
+function runWhatIf() {
+  const overrides={};
+  for (const m of METRIC_CFG) {
+    const v=parseFloat(document.getElementById('wi_'+m.id)?.value);
+    if(!isNaN(v)) overrides[m.id]=v;
+  }
+  if(!Object.keys(overrides).length){
+    document.getElementById('whatifResult').innerHTML='<div class="empty-state">Override at least one metric value above.</div>';
+    return;
+  }
+
+  const base={...state};
+  const after={...base,...overrides};
+  const bef=computeAll(base);
+  const aft=computeAll(after);
+  const rDelta=Math.round((aft.rank-bef.rank)*100)/100;
+  const pDelta=Math.round((aft.total-bef.total)*100)/100;
+  const sign=d=>d>0?'+'+d:String(d);
+  const col=d=>d>0?'var(--green)':d<0?'var(--red)':'var(--muted)';
+
+  let html=`<div class="stat-row">
+    <div class="stat-box"><div class="stat-val" style="color:var(--accent)">${bef.rank.toFixed(1)}</div><div class="stat-lbl">Before</div></div>
+    <div class="stat-box"><div class="stat-val" style="color:${col(rDelta)}">${sign(rDelta)}</div><div class="stat-lbl">Rank change</div></div>
+    <div class="stat-box"><div class="stat-val" style="color:${col(rDelta)}">${aft.rank.toFixed(1)}</div><div class="stat-lbl">After</div></div>
+  </div>`;
+
+  html+='<div style="margin-top:4px">';
+  for (const m of METRIC_CFG) {
+    if(!(m.id in overrides)) continue;
+    const d=Math.round(((aft.pts[m.id]||0)-(bef.pts[m.id]||0))*100)/100;
+    html+=`<div class="comm-row">
+      <span>${m.label} <span class="tag ${d>0?'tag-green':d<0?'tag-red':'tag-blue'}">${(base[m.id]||0).toFixed(1)}% → ${overrides[m.id].toFixed(1)}%</span></span>
+      <span class="comm-val" style="color:${col(d)}">${sign(d)} pts</span>
+    </div>`;
+  }
+  html+=`<div class="comm-row"><span><strong>Total change</strong></span><span class="comm-val" style="color:${col(pDelta)}">${sign(pDelta)} pts → rank ${aft.rank.toFixed(1)}</span></div>`;
+  html+='</div>';
+
+  document.getElementById('whatifResult').innerHTML=html;
+}
+
+function clearWhatIf() {
+  for (const m of METRIC_CFG) { const el=document.getElementById('wi_'+m.id); if(el) el.value=''; }
+  document.getElementById('whatifResult').innerHTML='';
+}
+
+// ═══════════════════════════════════════════════════════
+//  RESET
+// ═══════════════════════════════════════════════════════
 
 function resetAll() {
-  state = {};
-  for (const k of Object.keys(METRIC_LABELS)) {
-    const el = document.getElementById(`inputGrid_${k}`);
-    if (el) el.value = '';
+  state={};
+  for (const m of METRIC_CFG) {
+    const el=document.getElementById('inp_'+m.id); if(el) el.value='';
+    const pb=document.getElementById('pb_'+m.id); if(pb){pb.textContent=`0 / ${m.max}`;pb.style.color='var(--muted)';}
+    const bar=document.getElementById('bar_'+m.id); if(bar) bar.style.width='0%';
+    const cpv=document.getElementById('cpv_'+m.id); if(cpv){cpv.textContent='0';cpv.style.color='var(--muted)';}
   }
-  document.getElementById('catBreakdown').innerHTML = '';
-  document.getElementById('rankNum').textContent   = '—';
-  document.getElementById('rankPts').textContent   = '— / 100 pts';
-  document.getElementById('rankStatus').textContent = 'Enter your numbers';
-  document.getElementById('rankStatus').className   = 'rank-status status-warning';
-  document.getElementById('rankNum').style.webkitTextFillColor = 'var(--accent)';
+  document.getElementById('rankNum').innerHTML='—<span class="rank-max" style="opacity:.35">/10</span>';
+  document.getElementById('rankPts').innerHTML='<strong>—</strong> / 100 pts';
+  document.getElementById('rankBadge').textContent='Enter your metrics to begin';
+  document.getElementById('pathResult').innerHTML='<div class="empty-state">Enter your metrics, then pick a target rank.</div>';
 }
 
-// ── Tab switching ─────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════
+//  TABS
+// ═══════════════════════════════════════════════════════
 
 function showTab(name) {
-  document.querySelectorAll('.tab').forEach((t,i) => {
-    const ids = ['inputs','whatif','path','commission'];
-    t.classList.toggle('active', ids[i] === name);
-  });
-  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-  document.getElementById(`tab-${name}`).classList.add('active');
+  const ids=['path','commission','whatif'];
+  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',ids[i]===name));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
 }
 
-// Init
-updateUI();
+// ═══════════════════════════════════════════════════════
+//  UPLOAD & OCR
+// ═══════════════════════════════════════════════════════
+
+const uploadZone=document.getElementById('uploadZone');
+const fileInput=document.getElementById('fileInput');
+const previewWrap=document.getElementById('previewWrap');
+const previewImg=document.getElementById('previewImg');
+const ocrBar=document.getElementById('ocrBar');
+const ocrFill=document.getElementById('ocrFill');
+const ocrStatus=document.getElementById('ocrStatus');
+
+uploadZone.addEventListener('dragover',e=>{e.preventDefault();uploadZone.classList.add('drag')});
+uploadZone.addEventListener('dragleave',()=>uploadZone.classList.remove('drag'));
+uploadZone.addEventListener('drop',e=>{e.preventDefault();uploadZone.classList.remove('drag');handleFile(e.dataTransfer.files[0])});
+fileInput.addEventListener('change',e=>handleFile(e.target.files[0]));
+
+function handleFile(file) {
+  if(!file||!file.type.startsWith('image/')) return;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    uploadedImg=ev.target.result;
+    previewImg.src=uploadedImg;
+    previewWrap.style.display='block';
+    uploadZone.querySelector('input').value='';
+  };
+  reader.readAsDataURL(file);
+}
+
+function clearImage() {
+  uploadedImg=null;
+  previewImg.src='';
+  previewWrap.style.display='none';
+  ocrBar.style.display='none';
+  fileInput.value='';
+}
+
+// OCR keyword maps to field ids
+const OCR_KEYWORDS=[
+  {keys:['next up','nextup','next-up'],       id:'next_up'},
+  {keys:['rate plan','rateplan','rate %'],    id:'rate_plan'},
+  {keys:['protect'],                           id:'protection'},
+  {keys:['accessori','access'],               id:'accessories'},
+  {keys:['fiber','fibre','fib'],              id:'fiber'},
+  {keys:['aia','air'],                        id:'aia'},
+  {keys:['ppvga','pvga','premium voice','new voice'],id:'ppvga'},
+  {keys:['opps','opp'],                       id:'opps'},
+];
+
+function matchMetric(line) {
+  const low=line.toLowerCase();
+  for (const {keys,id} of OCR_KEYWORDS)
+    if(keys.some(k=>low.includes(k))) return id;
+  return null;
+}
+
+function parseOcrText(text) {
+  const found={};
+  const lines=text.split('\n').map(l=>l.trim()).filter(Boolean);
+
+  for (const line of lines) {
+    const metricId=matchMetric(line);
+    if(!metricId) continue;
+    // Extract all % numbers from the line
+    const nums=[...line.matchAll(/(\d{1,3}(?:\.\d+)?)\s*%/g)].map(m=>parseFloat(m[1]));
+    if(nums.length>0 && !(metricId in found)) {
+      // Take the first reasonable value: for attach metrics cap at 100, sales up to 300
+      const cfg=METRIC_CFG.find(m=>m.id===metricId);
+      const cap=cfg?.attach?100:300;
+      const val=nums.find(n=>n<=cap&&n>=0);
+      if(val!==undefined) found[metricId]=val;
+    }
+  }
+
+  // Fallback: if we got < 3 metrics, try scanning for standalone numbers near keywords
+  // by looking at adjacent lines
+  for (let i=0;i<lines.length;i++) {
+    const metricId=matchMetric(lines[i]);
+    if(!metricId||metricId in found) continue;
+    // Check this line and ±2 lines for a plain percentage
+    const context=lines.slice(Math.max(0,i-1),i+3).join(' ');
+    const nums=[...context.matchAll(/(\d{1,3}(?:\.\d+)?)\s*%/g)].map(m=>parseFloat(m[1]));
+    const cfg=METRIC_CFG.find(m=>m.id===metricId);
+    const cap=cfg?.attach?100:300;
+    const val=nums.find(n=>n<=cap&&n>=0);
+    if(val!==undefined) found[metricId]=val;
+  }
+
+  return found;
+}
+
+function applyOcrResult(parsed) {
+  let count=0;
+  for (const [id,val] of Object.entries(parsed)) {
+    const el=document.getElementById('inp_'+id);
+    if(el){ el.value=val; state[id]=val; count++; }
+  }
+  return count;
+}
+
+let tesseractLoaded=false;
+function loadTesseract(cb) {
+  if(tesseractLoaded){cb();return;}
+  const s=document.createElement('script');
+  s.src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js';
+  s.onload=()=>{tesseractLoaded=true;cb();};
+  s.onerror=()=>{ ocrStatus.textContent='Could not load OCR library — enter numbers manually.'; };
+  document.head.appendChild(s);
+}
+
+async function runOcr() {
+  if(!uploadedImg){alert('Upload a screenshot first.');return;}
+  ocrBar.style.display='block';
+  ocrFill.style.width='5%';
+  ocrStatus.textContent='Loading OCR engine…';
+
+  loadTesseract(async()=>{
+    try {
+      ocrFill.style.width='15%';
+      ocrStatus.textContent='Scanning image…';
+
+      const worker=await Tesseract.createWorker('eng',1,{
+        logger:m=>{
+          if(m.status==='recognizing text'){
+            ocrFill.style.width=Math.round(15+m.progress*75)+'%';
+            ocrStatus.textContent='Reading text… '+Math.round(m.progress*100)+'%';
+          }
+        }
+      });
+
+      const {data:{text}}=await worker.recognize(uploadedImg);
+      await worker.terminate();
+
+      ocrFill.style.width='95%';
+      ocrStatus.textContent='Parsing metrics…';
+
+      const parsed=parseOcrText(text);
+      const count=applyOcrResult(parsed);
+
+      ocrFill.style.width='100%';
+      if(count>0){
+        ocrStatus.textContent=`✅ Found ${count} metric${count!==1?'s':''} — verify and adjust as needed.`;
+        updateUI();
+      } else {
+        ocrStatus.textContent='⚠️ Couldn\'t read the numbers — please type them in manually.';
+      }
+    } catch(e) {
+      ocrStatus.textContent='OCR failed — enter numbers manually. ('+e.message+')';
+    }
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════════════════
+
+buildMetricsForm();
+buildWhatIfForm();
+buildSalesForm();
+buildRankBtns();
+buildCatTable();
 </script>
 </body>
 </html>
